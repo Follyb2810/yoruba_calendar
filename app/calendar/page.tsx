@@ -1,0 +1,401 @@
+"use client";
+import React, { useMemo, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+
+const FESTIVALS = [
+  {
+    id: "olokun",
+    title: "Olokún (Sea & sailors)",
+    start: { m: 2, d: 21 },
+    end: { m: 2, d: 25 },
+  },
+  {
+    id: "men_rites",
+    title: "Rites of passage (men)",
+    start: { m: 3, d: 12 },
+    end: { m: 3, d: 28 },
+  },
+  {
+    id: "oduduwa",
+    title: "Oduduwa (Earth)",
+    start: { m: 3, d: 15 },
+    end: { m: 3, d: 19 },
+  },
+  {
+    id: "oshosi",
+    title: "Oshosi (Hunt)",
+    start: { m: 3, d: 21 },
+    end: { m: 3, d: 24 },
+  },
+  {
+    id: "ogun_mar",
+    title: "Ogun (Metal & craft)",
+    start: { m: 3, d: 21 },
+    end: { m: 3, d: 24 },
+  },
+  {
+    id: "oshun",
+    title: "Oshun (Fertility)",
+    start: { m: 4, d: 24 },
+    end: { m: 4, d: 30 },
+  },
+  {
+    id: "egungun",
+    title: "Egungun (Ancestors)",
+    start: { m: 5, d: 25 },
+    end: { m: 6, d: 1 },
+  },
+  {
+    id: "yoruba_new_year",
+    title: "Yoruba New Year (Okudu 3)",
+    start: { m: 6, d: 3 },
+    end: { m: 6, d: 3 },
+  },
+  {
+    id: "shopona",
+    title: "Shopona & Osanyin",
+    start: { m: 6, d: 7 },
+    end: { m: 6, d: 8 },
+  },
+  {
+    id: "women_rites",
+    title: "Rites of passage (women)",
+    start: { m: 6, d: 10 },
+    end: { m: 6, d: 23 },
+  },
+  {
+    id: "yemoja",
+    title: "Yemoja (Matriarch)",
+    start: { m: 6, d: 18 },
+    end: { m: 6, d: 21 },
+  },
+  {
+    id: "ifa_mass",
+    title: "Ọrúnmilà / Ifá gatherings",
+    start: { m: 7, d: 1 },
+    end: { m: 7, d: 14 },
+  },
+  {
+    id: "elegba",
+    title: "Ẹlégba / Eṣu",
+    start: { m: 7, d: 12 },
+    end: { m: 7, d: 14 },
+  },
+  {
+    id: "sango",
+    title: "Ṣàngo (Thunder)",
+    start: { m: 7, d: 15 },
+    end: { m: 7, d: 21 },
+  },
+  {
+    id: "ogun_aug",
+    title: "Ogun (August weekend)",
+    start: { m: 8, d: 25 },
+    end: { m: 8, d: 31 },
+  },
+  {
+    id: "oya_osun",
+    title: "Oya / Ọwaro Osun (Ijebu)",
+    start: { m: 10, d: 15 },
+    end: { m: 10, d: 21 },
+  },
+  {
+    id: "shigidi",
+    title: "Shigidi (Òrún-Apadi)",
+    start: { m: 10, d: 30 },
+    end: { m: 10, d: 30 },
+  },
+  {
+    id: "obajulaiye",
+    title: "Obajulaiye (Commerce)",
+    start: { m: 12, d: 15 },
+    end: { m: 12, d: 15 },
+  },
+];
+
+const YORUBA_YEAR_OFFSET = 8042;
+const ORISA_NAMES = ["Obatala", "Orunmila", "Ogun", "Sango"];
+
+function toKeyDate(year: number, m: number, d: number) {
+  return new Date(year, m - 1, d, 0, 0, 0, 0);
+}
+function inRange(date: Date, start: Date, end: Date) {
+  const t = date.getTime();
+  return t >= start.getTime() && t <= end.getTime();
+}
+function festivalInstancesForGregorianYear(gregYear: number) {
+  return FESTIVALS.flatMap((f) => {
+    const start = toKeyDate(gregYear, f.start.m, f.start.d);
+    const end = toKeyDate(gregYear, f.end.m, f.end.d);
+    if (end.getTime() >= start.getTime()) return [{ ...f, start, end }];
+    return [
+      { ...f, start: start, end: toKeyDate(gregYear, 12, 31) },
+      { ...f, start: toKeyDate(gregYear + 1, 1, 1), end: end },
+    ];
+  });
+}
+
+function getYorubaYear(date: Date) {
+  const y = date.getFullYear();
+  const newYearThisGreg = toKeyDate(y, 6, 3);
+  let yorubaYear = y + YORUBA_YEAR_OFFSET;
+  if (date.getTime() < newYearThisGreg.getTime()) {
+    yorubaYear = y - 1 + YORUBA_YEAR_OFFSET;
+  }
+  return yorubaYear;
+}
+function getOrisaDayIndex(date: Date) {
+  const y = date.getFullYear();
+  let start = toKeyDate(y, 6, 3);
+  if (date.getTime() < start.getTime()) start = toKeyDate(y - 1, 6, 3);
+  const daysSince = Math.floor(
+    (date.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+  );
+  const idx = ((daysSince % 4) + 4) % 4; // 0..3
+  return idx + 1; // 1..4
+}
+function getOrisaNameForDate(date: Date) {
+  const idx = getOrisaDayIndex(date) - 1; // 0-based
+  return ORISA_NAMES[idx];
+}
+function getBusinessWeekDayName(date: Date) {
+  return [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ][date.getDay()];
+}
+
+function startOfMonth(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+function daysInMonth(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+}
+
+export default function Page() {
+  const today = new Date();
+  const [cursor, setCursor] = useState(
+    () => new Date(today.getFullYear(), today.getMonth(), 1)
+  );
+  const [showFourDayCycle, setShowFourDayCycle] = useState(true);
+
+  const festivals = useMemo(() => {
+    const y = cursor.getFullYear();
+    return [
+      ...festivalInstancesForGregorianYear(y - 1),
+      ...festivalInstancesForGregorianYear(y),
+      ...festivalInstancesForGregorianYear(y + 1),
+    ];
+  }, [cursor]);
+
+  const grid = useMemo(() => {
+    const start = startOfMonth(cursor);
+    const dim = daysInMonth(start);
+    const firstWeekday = start.getDay(); // 0..6 (Sun..Sat)
+    const cells: ({ date: Date; festivals: any[] } | null)[] = [];
+
+    for (let i = 0; i < firstWeekday; i++) cells.push(null);
+
+    for (let d = 1; d <= dim; d++) {
+      const date = new Date(start.getFullYear(), start.getMonth(), d);
+      const dayFests = festivals.filter((f) => inRange(date, f.start, f.end));
+      cells.push({ date, festivals: dayFests });
+    }
+
+    while (cells.length % 7 !== 0) cells.push(null);
+    return cells;
+  }, [cursor, festivals]);
+
+  function gotoPrevMonth() {
+    setCursor((c) => new Date(c.getFullYear(), c.getMonth() - 1, 1));
+  }
+  function gotoNextMonth() {
+    setCursor((c) => new Date(c.getFullYear(), c.getMonth() + 1, 1));
+  }
+  function gotoToday() {
+    setCursor(new Date(today.getFullYear(), today.getMonth(), 1));
+  }
+
+  return (
+    <div className="p-6">
+      <Card className="rounded-2xl">
+        <CardContent>
+          <header className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-2xl font-semibold">
+                Kọ́jọ́dá — Yoruba Calendar
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Yoruba year starts June 3 • Toggle Orisa 4-day cycle
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button onClick={gotoPrevMonth} variant="ghost">
+                Prev
+              </Button>
+              <Button onClick={gotoToday} variant="outline">
+                Today
+              </Button>
+              <Button onClick={gotoNextMonth} variant="ghost">
+                Next
+              </Button>
+            </div>
+          </header>
+
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="text-sm">
+                Viewing:{" "}
+                <strong>
+                  {cursor.toLocaleString(undefined, {
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </strong>
+              </div>
+              <div className="text-sm">
+                Yoruba Year: <strong>{getYorubaYear(cursor)}</strong>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 text-sm">
+                <Switch
+                  checked={showFourDayCycle}
+                  onCheckedChange={(v: boolean) => setShowFourDayCycle(v)}
+                />
+                <span>Show 4-day Orisa cycle</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-7 gap-1 bg-card rounded overflow-hidden border">
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((wd) => (
+              <div
+                key={wd}
+                className="py-2 text-center font-medium bg-muted border-b"
+              >
+                {wd}
+              </div>
+            ))}
+
+            {grid.map((cell, i) => {
+              if (!cell)
+                return (
+                  <div
+                    key={i}
+                    className="p-2 border min-h-[90px] bg-muted/40"
+                  />
+                );
+              const { date, festivals } = cell;
+              const isToday = date.toDateString() === today.toDateString();
+              const orisaName = getOrisaNameForDate(date);
+              const businessName = getBusinessWeekDayName(date);
+
+              return (
+                <div
+                  key={i}
+                  className={`p-3 border min-h-[90px] ${
+                    isToday ? "bg-accent/30" : "bg-background"
+                  }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="text-sm font-medium">{date.getDate()}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {businessName}
+                    </div>
+                  </div>
+
+                  <div className="mt-1 text-xs">
+                    <div className="text-[11px]">
+                      {showFourDayCycle ? (
+                        <>
+                          Orisa: <strong>{orisaName}</strong>
+                        </>
+                      ) : (
+                        <>
+                          Orisa (calc): <strong>{orisaName}</strong>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-2 space-y-1">
+                    {festivals.slice(0, 2).map((f) => (
+                      <div
+                        key={f.id}
+                        className="text-[12px] px-1 py-0.5 rounded border-l-4 border-primary/60 bg-primary/10"
+                      >
+                        {f.title}
+                      </div>
+                    ))}
+                    {festivals.length > 2 && (
+                      <div className="text-[11px] text-muted-foreground">
+                        +{festivals.length - 2} more
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <section className="mt-6">
+            <h2 className="text-lg font-semibold mb-2">Legend & Quick Info</h2>
+            <ul className="list-disc pl-5 text-sm space-y-1 text-muted-foreground">
+              <li>Yoruba year begins on June 3 and runs to June 2.</li>
+              <li>
+                Date to Yoruba-year mapping uses offset{" "}
+                <code>{YORUBA_YEAR_OFFSET}</code>.
+              </li>
+              <li>
+                The 4-day Orisa cycle is calculated relative to the Yoruba New
+                Year (June 3 = Obatala / Day 1).
+              </li>
+            </ul>
+
+            <div className="mt-4">
+              <h3 className="font-medium">Upcoming festivals this month</h3>
+              <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                {festivals
+                  .filter((f) =>
+                    inRange(
+                      new Date(cursor.getFullYear(), cursor.getMonth(), 15),
+                      f.start,
+                      f.end
+                    )
+                  )
+                  .map((f) => (
+                    <div key={f.id} className="p-3 border rounded">
+                      <div className="font-semibold">{f.title}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {f.start.toDateString()} — {f.end.toDateString()}
+                      </div>
+                    </div>
+                  ))}
+                {festivals.filter((f) =>
+                  inRange(
+                    new Date(cursor.getFullYear(), cursor.getMonth(), 15),
+                    f.start,
+                    f.end
+                  )
+                ).length === 0 && (
+                  <div className="text-sm text-muted-foreground">
+                    No major festivals listed for this month in our dataset.
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
