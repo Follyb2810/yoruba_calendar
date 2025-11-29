@@ -165,7 +165,7 @@ const ORISA_DAILY: Record<number, string[]> = {
     "Ẹgbẹ́-Ọ̀gbà/Alárá-Igbó",
     "Orò",
     "Ẹ̀lúkú",
-    "Agẹmọ",
+    " Agẹmọ",
     "Òrìṣà Òkè",
     "Ògìyán/Ògìrìyán",
   ],
@@ -202,24 +202,24 @@ function festivalInstancesForGregorianYear(gregYear: number) {
 function getYorubaYear(date: Date) {
   const y = date.getFullYear();
   const newYearThisGreg = toKeyDate(y, 6, 3);
-  return date.getTime() < newYearThisGreg.getTime()
-    ? y - 1 + YORUBA_YEAR_OFFSET
-    : y + YORUBA_YEAR_OFFSET;
+  let yorubaYear = y + YORUBA_YEAR_OFFSET;
+  if (date.getTime() < newYearThisGreg.getTime())
+    yorubaYear = y - 1 + YORUBA_YEAR_OFFSET;
+  return yorubaYear;
 }
 function getOrisaDayIndex(date: Date) {
   const y = date.getFullYear();
   let start = toKeyDate(y, 6, 3);
   if (date.getTime() < start.getTime()) start = toKeyDate(y - 1, 6, 3);
-  return (
-    (((Math.floor((date.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) %
-      4) +
-      4) %
-      4) +
-    1
+  const daysSince = Math.floor(
+    (date.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
   );
+  const idx = ((daysSince % 4) + 4) % 4;
+  return idx + 1;
 }
 function getOrisaNameForDate(date: Date) {
-  return ORISA_NAMES[getOrisaDayIndex(date) - 1];
+  const idx = getOrisaDayIndex(date) - 1;
+  return ORISA_NAMES[idx];
 }
 function getBusinessWeekDayName(date: Date) {
   return [
@@ -299,33 +299,21 @@ export default function Page() {
             <div className="flex-1">
               {" "}
               <h1 className="text-2xl font-semibold">
-                Kọ́jọ́dá — Yoruba Calendar
+                Kọ́jọ́dá — Yoruba Calendar{" "}
               </h1>{" "}
               <p className="text-sm text-muted-foreground">
-                Yoruba year starts June 3 • Toggle Orisa 4-day cycle
+                Yoruba year starts June 3 • Toggle Orisa 4-day cycle{" "}
               </p>{" "}
             </div>{" "}
             <div className="flex flex-wrap gap-2">
               {" "}
-              <Button
-                onClick={gotoPrevMonth}
-                variant="ghost"
-                aria-label="Previous month"
-              >
+              <Button onClick={gotoPrevMonth} variant="ghost">
                 Prev
               </Button>{" "}
-              <Button
-                onClick={gotoToday}
-                variant="outline"
-                aria-label="Go to today"
-              >
+              <Button onClick={gotoToday} variant="outline">
                 Today
               </Button>{" "}
-              <Button
-                onClick={gotoNextMonth}
-                variant="ghost"
-                aria-label="Next month"
-              >
+              <Button onClick={gotoNextMonth} variant="ghost">
                 Next
               </Button>{" "}
             </div>{" "}
@@ -360,14 +348,15 @@ export default function Page() {
           </div>
           <div className="overflow-x-auto">
             <div className="grid grid-cols-7 gap-1 bg-card rounded overflow-hidden border text-[10px] sm:text-xs md:text-sm min-w-[600px]">
-              {["S", "M", "T", "W", "T", "F", "S"].map((wd, idx) => (
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((wd) => (
                 <div
-                  key={idx}
+                  key={wd}
                   className="py-2 text-center font-semibold text-muted-foreground bg-muted border-b"
                 >
                   {wd}
                 </div>
               ))}
+
               {grid.map((cell, i) => {
                 if (!cell)
                   return (
@@ -381,15 +370,16 @@ export default function Page() {
                 const orisaName = showFourDayCycle
                   ? getOrisaNameForDate(date)
                   : "";
-                const [bgClass, textClass] = (
-                  showFourDayCycle ? getOrisaColor(orisaName) : ""
-                ).split(" ");
+                let orisaColor = showFourDayCycle
+                  ? getOrisaColor(orisaName)
+                  : "";
+                const [bgClass, textClass] = orisaColor.split(" ");
                 const businessName = getBusinessWeekDayName(date);
 
                 return (
                   <div
                     key={i}
-                    className={`p-1 sm:p-2 border min-h-[70px] sm:min-h-[90px] ${bgClass} ${textClass} hover:bg-opacity-70 cursor-pointer ${
+                    className={`p-1 sm:p-2 border min-h-[70px] sm:min-h-[90px] ${bgClass} ${textClass} ${
                       isToday ? "border-2 border-black" : ""
                     }`}
                     onClick={() => openDayModal(date.getDate())}
@@ -429,10 +419,9 @@ export default function Page() {
                 <code>{YORUBA_YEAR_OFFSET}</code>.
               </li>
               <li>
-                The 4-day Orisa cycle is relative to Yoruba New Year (June 3 =
-                Obatala / Day 1).
+                The 4-day Orisa cycle is calculated relative to the Yoruba New
+                Year (June 3 = Obatala / Day 1).
               </li>
-              <li>Hover on a day to see festival names.</li>
             </ul>
           </section>
           <Dialog open={orisaModalOpen} onOpenChange={setOrisaModalOpen}>
@@ -441,8 +430,8 @@ export default function Page() {
                 <DialogTitle>All Orisa Names</DialogTitle>
               </DialogHeader>
               <ul className="list-disc pl-5 space-y-1 mt-2">
-                {ORISA_NAMES.map((n) => (
-                  <li key={n}>{n}</li>
+                {ORISA_NAMES.map((name) => (
+                  <li key={name}>{name}</li>
                 ))}
               </ul>
               <div className="mt-4 flex justify-end">
