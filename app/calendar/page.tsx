@@ -1,5 +1,5 @@
 "use client";
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -14,14 +14,8 @@ import {
 export type IFestive = {
   id: string;
   title: string;
-  start: {
-    m: number;
-    d: number;
-  };
-  end: {
-    m: number;
-    d: number;
-  };
+  start: { m: number; d: number };
+  end: { m: number; d: number };
 };
 
 const ORISA_COLORS: Record<string, string> = {
@@ -34,9 +28,15 @@ const ORISA_COLORS: Record<string, string> = {
   Elegba: "bg-red-800 text-white",
   Oya: "bg-purple-500 text-white",
   Olokun: "bg-blue-900 text-white",
-  Egungun: "bg-gradient-to-r from-red-400 via-yellow-400 to-blue-400",
+  Egungun:
+    "bg-gradient-to-r from-red-400 via-yellow-400 to-blue-400 text-black",
   Shopona: "bg-red-700 text-white",
 };
+
+function getOrisaColor(orisaName: string) {
+  const key = Object.keys(ORISA_COLORS).find((k) => orisaName.includes(k));
+  return key ? ORISA_COLORS[key] : "bg-background text-black";
+}
 
 const FESTIVALS: IFestive[] = [
   {
@@ -119,7 +119,7 @@ const FESTIVALS: IFestive[] = [
   },
   {
     id: "sango",
-    title: "Ṣàngo (Thunder)",
+    title: "Ṣàngó (Thunder)",
     start: { m: 7, d: 15 },
     end: { m: 7, d: 21 },
   },
@@ -150,17 +150,44 @@ const FESTIVALS: IFestive[] = [
 ];
 
 const YORUBA_YEAR_OFFSET = 8042;
-const ORISA_NAMES = ["Obatala", "Orunmila", "Ogun", "Sango"];
+const ORISA_NAMES = [
+  "Ọ̀ṣẹ̀ Obatala",
+  "Ọ̀ṣẹ̀ Ifá/Orunmila",
+  "Ọ̀ṣẹ̀ Ogun",
+  "Ọ̀ṣẹ̀ Sango",
+];
+const ORISA_DAILY: Record<number, string[]> = {
+  1: [
+    "Ọbàtálá/Òrìṣà Ńlá",
+    "Yemòó",
+    "Èṣù",
+    "Egúngún",
+    "Ẹgbẹ́-Ọ̀gbà/Alárá-Igbó",
+    "Orò",
+    "Ẹ̀lúkú",
+    " Agẹmọ",
+    "Òrìṣà Òkè",
+    "Ògìyán/Ògìrìyán",
+  ],
+  2: ["Ifá/Ọ̀rúnmìlà", "Ọ̀ṣun", "Ọ̀sanyìn", "Yemọja", "Olókun", "Ẹ̀là"],
+  3: ["Ògún", "Ìja", "Ọ̀ṣọ́ọ̀sì", "Òrìṣà-Oko", "Erinlẹ̀"],
+  4: [
+    "Ṣàngó/Jàkúta",
+    "Ọya",
+    "Baáyànnì",
+    "Aganjú",
+    "Ọbalúayé/Ṣànpọ̀nná",
+    "Nàná-Bùkúù",
+  ],
+};
 
 function toKeyDate(year: number, m: number, d: number) {
   return new Date(year, m - 1, d, 0, 0, 0, 0);
 }
-
 function inRange(date: Date, start: Date, end: Date) {
   const t = date.getTime();
   return t >= start.getTime() && t <= end.getTime();
 }
-
 function festivalInstancesForGregorianYear(gregYear: number) {
   return FESTIVALS.flatMap((f) => {
     const start = toKeyDate(gregYear, f.start.m, f.start.d);
@@ -172,7 +199,6 @@ function festivalInstancesForGregorianYear(gregYear: number) {
     ];
   });
 }
-
 function getYorubaYear(date: Date) {
   const y = date.getFullYear();
   const newYearThisGreg = toKeyDate(y, 6, 3);
@@ -181,7 +207,6 @@ function getYorubaYear(date: Date) {
     yorubaYear = y - 1 + YORUBA_YEAR_OFFSET;
   return yorubaYear;
 }
-
 function getOrisaDayIndex(date: Date) {
   const y = date.getFullYear();
   let start = toKeyDate(y, 6, 3);
@@ -192,12 +217,10 @@ function getOrisaDayIndex(date: Date) {
   const idx = ((daysSince % 4) + 4) % 4;
   return idx + 1;
 }
-
 function getOrisaNameForDate(date: Date) {
   const idx = getOrisaDayIndex(date) - 1;
   return ORISA_NAMES[idx];
 }
-
 function getBusinessWeekDayName(date: Date) {
   return [
     "Sunday",
@@ -209,23 +232,12 @@ function getBusinessWeekDayName(date: Date) {
     "Saturday",
   ][date.getDay()];
 }
-
 function startOfMonth(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 }
-
 function daysInMonth(date: Date) {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
 }
-
-// Daily Orisa mapping for modal display (example)
-
-const ORISA_DAILY: Record<number, string[]> = {
-  1: ["Obatala", "Yemoja", "Elegba"],
-  2: ["Orunmila", "Oshun", "Sango"],
-  3: ["Ogun", "Oya"],
-  4: ["Sango", "Obatala"],
-};
 
 export default function Page() {
   const today = new Date();
@@ -234,7 +246,6 @@ export default function Page() {
   );
   const [showFourDayCycle, setShowFourDayCycle] = useState(true);
   const [orisaModalOpen, setOrisaModalOpen] = useState(false);
-
   const [dayModalOpen, setDayModalOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
@@ -252,15 +263,12 @@ export default function Page() {
     const dim = daysInMonth(start);
     const firstWeekday = start.getDay();
     const cells: ({ date: Date; festivals: any[] } | null)[] = [];
-
     for (let i = 0; i < firstWeekday; i++) cells.push(null);
-
     for (let d = 1; d <= dim; d++) {
       const date = new Date(start.getFullYear(), start.getMonth(), d);
       const dayFests = festivals.filter((f) => inRange(date, f.start, f.end));
       cells.push({ date, festivals: dayFests });
     }
-
     while (cells.length % 7 !== 0) cells.push(null);
     return cells;
   }, [cursor, festivals]);
@@ -332,7 +340,7 @@ export default function Page() {
               </Button>
             </div>
           </div>
-          <div className="grid grid-cols-7 gap-1 bg-card rounded overflow-hidden border">
+          <div className="grid grid-cols-7 gap-1 bg-card rounded overflow-hidden border text-[10px] sm:text-xs md:text-sm">
             {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((wd) => (
               <div
                 key={wd}
@@ -351,14 +359,19 @@ export default function Page() {
                 );
               const { date, festivals } = cell;
               const isToday = date.toDateString() === today.toDateString();
-              const orisaName = getOrisaNameForDate(date);
+              const orisaName = showFourDayCycle
+                ? getOrisaNameForDate(date)
+                : "";
+              const orisaColor = showFourDayCycle
+                ? getOrisaColor(orisaName)
+                : "";
               const businessName = getBusinessWeekDayName(date);
 
               return (
                 <div
                   key={i}
-                  className={`p-3 border min-h-[90px] ${
-                    isToday ? "bg-accent/30" : "bg-background"
+                  className={`p-1 sm:p-2 border min-h-[70px] sm:min-h-[90px] ${orisaColor} ${
+                    isToday ? "border-2 border-black" : ""
                   }`}
                   onClick={() => openDayModal(date.getDate())}
                 >
@@ -368,11 +381,11 @@ export default function Page() {
                       {businessName}
                     </div>
                   </div>
-                  <div className="mt-1 text-xs">
-                    <div className="text-[11px]">
-                      Orisa: <strong>{orisaName}</strong>
+                  {showFourDayCycle && (
+                    <div className="mt-1 text-xs text-[11px]">
+                      <strong>{orisaName}</strong>
                     </div>
-                  </div>
+                  )}
                   <div className="mt-2 space-y-1">
                     {festivals.map((f) => (
                       <div
@@ -401,7 +414,6 @@ export default function Page() {
               </li>
             </ul>
           </section>
-          {/* Orisa Modal */}
           <Dialog open={orisaModalOpen} onOpenChange={setOrisaModalOpen}>
             <DialogContent className="max-w-sm">
               <DialogHeader>
@@ -419,7 +431,6 @@ export default function Page() {
               </div>
             </DialogContent>
           </Dialog>
-          {/* Daily Orisa Modal */}
           <Dialog open={dayModalOpen} onOpenChange={setDayModalOpen}>
             <DialogContent className="max-w-sm">
               <DialogHeader>
