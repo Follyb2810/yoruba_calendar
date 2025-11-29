@@ -25,49 +25,56 @@ const CalendarHeader: FC<CalendarHeaderProps> = ({
   getYorubaYear,
 }) => {
   return (
-    <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
-      <div className="flex-1">
-        <h1 className="text-2xl font-semibold">Kọ́jọ́dá — Yoruba Calendar</h1>
-        <p className="text-sm text-muted-foreground">
-          Yoruba year starts June 3 • Toggle Orisa 4-day cycle
-        </p>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <Button onClick={gotoPrevMonth} variant="ghost">
-          Prev
-        </Button>
-        <Button onClick={gotoToday} variant="outline">
-          Today
-        </Button>
-        <Button onClick={gotoNextMonth} variant="ghost">
-          Next
-        </Button>
-      </div>
-      <div className="flex flex-wrap gap-3 text-sm mt-2 sm:mt-0">
-        <div>
-          Viewing:{" "}
-          <strong>
-            {cursor.toLocaleString(undefined, {
-              month: "long",
-              year: "numeric",
-            })}
-          </strong>
+    <header className="flex flex-col gap-4 mb-4">
+      {/* Row 1: Title */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl font-semibold truncate">
+            Kọ́jọ́dá — Yoruba Calendar
+          </h1>
+          <p className="text-sm text-muted-foreground truncate">
+            Yoruba year starts June 3 • Toggle Orisa 4-day cycle
+          </p>
         </div>
-        <div>
-          Yoruba Year: <strong>{getYorubaYear(cursor)}</strong>
+        {/* Navigation Buttons */}
+        <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
+          <Button onClick={gotoPrevMonth} variant="ghost">
+            Prev
+          </Button>
+          <Button onClick={gotoToday} variant="outline">
+            Today
+          </Button>
+          <Button onClick={gotoNextMonth} variant="ghost">
+            Next
+          </Button>
         </div>
       </div>
-      <div className="flex items-center gap-2 mt-2 sm:mt-0">
-        <div className="flex items-center gap-2 text-sm">
-          <Switch
-            checked={showFourDayCycle}
-            onCheckedChange={setShowFourDayCycle}
-          />
-          <span>Show 4-day Orisa cycle</span>
+
+      {/* Row 2: Info & Controls */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex flex-col sm:flex-row gap-2 text-sm">
+          <div>
+            Viewing:{" "}
+            <strong>
+              {cursor.toLocaleString(undefined, { month: "long", year: "numeric" })}
+            </strong>
+          </div>
+          <div>
+            Yoruba Year: <strong>{getYorubaYear(cursor)}</strong>
+          </div>
         </div>
-        <Button onClick={() => setOrisaModalOpen(true)} variant="outline">
-          Show All Orisa
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 text-sm">
+            <Switch
+              checked={showFourDayCycle}
+              onCheckedChange={setShowFourDayCycle}
+            />
+            <span>Show 4-day Orisa cycle</span>
+          </div>
+          <Button onClick={() => setOrisaModalOpen(true)} variant="outline">
+            Show All Orisa
+          </Button>
+        </div>
       </div>
     </header>
   );

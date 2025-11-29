@@ -1,0 +1,28 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Orisa {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  festivals Festival[]
+}
+
+model Festival {
+  id         Int    @id @default(autoincrement())
+  title      String
+  startMonth Int
+  startDay   Int
+  endMonth   Int
+  endDay     Int
+  orisaId    Int
+  orisa      Orisa  @relation(fields: [orisaId], references: [id])
+}
