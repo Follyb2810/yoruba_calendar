@@ -289,33 +289,39 @@ export default function Page() {
 
   return (
     <div className="p-6">
+      {" "}
       <Card className="rounded-2xl">
+        {" "}
         <CardContent>
-          <header className="flex items-center justify-between mb-4">
-            <div>
+          {" "}
+          <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
+            {" "}
+            <div className="flex-1">
+              {" "}
               <h1 className="text-2xl font-semibold">
-                Kọ́jọ́dá — Yoruba Calendar
-              </h1>
+                Kọ́jọ́dá — Yoruba Calendar{" "}
+              </h1>{" "}
               <p className="text-sm text-muted-foreground">
-                Yoruba year starts June 3 • Toggle Orisa 4-day cycle
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
+                Yoruba year starts June 3 • Toggle Orisa 4-day cycle{" "}
+              </p>{" "}
+            </div>{" "}
+            <div className="flex flex-wrap gap-2">
+              {" "}
               <Button onClick={gotoPrevMonth} variant="ghost">
                 Prev
-              </Button>
+              </Button>{" "}
               <Button onClick={gotoToday} variant="outline">
                 Today
-              </Button>
+              </Button>{" "}
               <Button onClick={gotoNextMonth} variant="ghost">
                 Next
-              </Button>
-            </div>
+              </Button>{" "}
+            </div>{" "}
           </header>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="text-sm">
-                Viewing:
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-3">
+            <div className="flex flex-wrap gap-3 text-sm">
+              <div>
+                Viewing:{" "}
                 <strong>
                   {cursor.toLocaleString(undefined, {
                     month: "long",
@@ -323,15 +329,15 @@ export default function Page() {
                   })}
                 </strong>
               </div>
-              <div className="text-sm">
+              <div>
                 Yoruba Year: <strong>{getYorubaYear(cursor)}</strong>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center gap-2 text-sm">
                 <Switch
                   checked={showFourDayCycle}
-                  onCheckedChange={(v) => setShowFourDayCycle(v)}
+                  onCheckedChange={setShowFourDayCycle}
                 />
                 <span>Show 4-day Orisa cycle</span>
               </div>
@@ -345,11 +351,12 @@ export default function Page() {
               {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((wd) => (
                 <div
                   key={wd}
-                  className="py-2 text-center font-medium bg-muted border-b"
+                  className="py-2 text-center font-semibold text-muted-foreground bg-muted border-b"
                 >
                   {wd}
                 </div>
               ))}
+
               {grid.map((cell, i) => {
                 if (!cell)
                   return (
@@ -366,15 +373,13 @@ export default function Page() {
                 let orisaColor = showFourDayCycle
                   ? getOrisaColor(orisaName)
                   : "";
-                if (orisaColor.includes("bg-green-200"))
-                  orisaColor = "bg-green-200 text-black";
-
+                const [bgClass, textClass] = orisaColor.split(" ");
                 const businessName = getBusinessWeekDayName(date);
 
                 return (
                   <div
                     key={i}
-                    className={`p-1 sm:p-2 border min-h-[70px] sm:min-h-[90px] ${orisaColor} ${
+                    className={`p-1 sm:p-2 border min-h-[70px] sm:min-h-[90px] ${bgClass} ${textClass} ${
                       isToday ? "border-2 border-black" : ""
                     }`}
                     onClick={() => openDayModal(date.getDate())}
@@ -383,13 +388,11 @@ export default function Page() {
                       <div className="text-sm font-medium">
                         {date.getDate()}
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {businessName}
-                      </div>
+                      <div className="text-xs">{businessName}</div>
                     </div>
                     {showFourDayCycle && (
-                      <div className="mt-1 text-xs text-[11px]">
-                        <strong>{orisaName}</strong>
+                      <div className="mt-1 text-xs text-[11px] font-semibold">
+                        {orisaName}
                       </div>
                     )}
                     <div className="mt-2 space-y-1">
@@ -412,7 +415,7 @@ export default function Page() {
             <ul className="list-disc pl-5 text-sm space-y-1 text-muted-foreground">
               <li>Yoruba year begins on June 3 and runs to June 2.</li>
               <li>
-                Date to Yoruba-year mapping uses offset
+                Date to Yoruba-year mapping uses offset{" "}
                 <code>{YORUBA_YEAR_OFFSET}</code>.
               </li>
               <li>
