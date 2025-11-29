@@ -202,3 +202,84 @@ Based on all this, our website needs:
 - Festival list with date rules
 - Season ranges
 - Conversion constants
+
+### **ÌṢẸ̀ṢE CALENDAR FOR THE MONTH Of NOVEMBER, 2025**
+
+```bash
+
+01. Ọbàtálá/Òrìṣà-Ńlá, Yemòó, Èṣù, Egúngún, Ẹgbẹ́-Ọ̀gbà/Alárá-Igbó, Orô, Ẹ̀lúkú, Agẹmọ, Òrìṣà Òkè, Ògìyán/Ògìrìyán.
+
+02. Ifa/Ọ̀rúnmìlà, Ọ̀ṣun, Ọ̀sanyìn, Yemọja, Olókun, Ẹ̀là****
+
+03. Ògún, Ìja, Ọ̀ṣọ́ọ̀sì, Òrìṣà-Oko, Erinlẹ̀.
+
+04. Șàngó/Jàkúta, Ọya, Baáyànnì, Aganjú, Ọbalúayé/Ṣànpọ̀nná, Nàná-Bùkúù.
+
+05. Ọbàtálá/Òrìṣà Ńlá, Yemòó,, Èṣù, Egúngún, Ẹgbẹ́-Ọ̀gbà/ Alárá-Igbó, Orò, Ẹ̀lúkú, Agẹmọ, Òrìṣà Òkè, Ògìyán/Ògìrìyán.
+
+06. Ifa/Ọ̀rúnmìlà, Ọ̀ṣun, Ọ̀sanyìn, Yemọja, Olókun, Ẹ̀là**
+
+07. Ògún, Ìja, Ọ̀ṣọ́ọ̀sì, Òrìṣà-Oko, Erinlẹ̀.
+
+08. Ṣàngó/Jàkúta, Ọya, Baáyànnì, Aganjú, Ọbalúayé/Ṣànpọ̀nná, Nàná-Bùkúù.
+
+09. Ọbàtálá/Òrìṣà Ńlá, Yemòó, Èṣù, Egúngún, Ẹgbẹ́-Ọ̀gbà/Alárá-Igbó, Orò, Ẹ̀lúkú, Agẹmọ, Òrìṣà Òkè, Ògìyán/Ògìrìyán.
+
+10. Ifá/Ọ̀rúnmìlà, Ọ̀ṣun, Ọ̀sanyìn, Yemọja, Olókun, Ẹ̀là***
+
+11. Ògún, Ìja, Ọ̀ṣọ́ọ̀sì, Òrìṣà-Oko, Erinlẹ̀.
+
+12. Ṣàngó/Jàkúta, Ọya, Baáyànnì, Aganjú, Ọbalúayé/Ṣànpọ̀nná, Nàná-Bùkúù.
+
+13. Ọbàtálá/Òrìṣà Ńlá, Yemòó, Èṣù, Egúngún, Ẹgbẹ́-Ọ̀gbà/Alárá-Igbó, Orò, Ẹ̀lúkú, Agẹmọ, Òrìṣà Òkè, Ògìyán/Ògìrìyán.
+
+14. Ifá/Ọ̀rúnmìlà, Ọ̀ṣun, Ọ̀sanyìn, Yemọja, Olókun, Ẹ̀là.
+
+15. Ògún, Ìja, Ọ̀ṣọ́ọ̀sì, Òrìṣà-Oko, Erinlẹ̀.
+
+16. Ṣàngó/Jàkúta, Ọya, Baáyànnì, Aganjú, Ọbalúayé/Ṣànpọ̀nná, Nàná-Bùkúù.
+
+17. Ọbàtálá/Òrìṣà Ńlá, Yemòó, Èṣù, Egúngún, Ẹgbẹ́-Ọ̀gbà/Alárá-Igbó, Orò, Ẹ̀lúkú, Agẹmọ, Òrìṣà Òkè, Ògìyán/Ògìrìyán.
+
+18. Ifá/Ọ̀rúnmìlà, Ọ̀ṣun, Ọ̀sanyìn, Yemọja, Olókun, Ẹ̀là****
+
+19. Ògún, Ìja, Ọ̀ṣọ́ọ̀sí, Òrìṣà-Oko, Erinlẹ̀.
+
+20. Ṣàngó/Jàkúta, Ọya, Baáyànnì, Aganjú, Ọbalúayé/Ṣànpọ̀nná, Nàná-Bùkúù.
+
+21. Ọbàtálá/Òrìṣà Ńlá, Yemòó,Èṣù, Egúngún, Ẹgbẹ́-Ọ̀gbà/Alárá-Igbó, Orò, Ẹ̀lúkú, Agẹmọ, Òrìṣà Òkè, Ògìyán/Ògìrìyán.
+
+22. Ifá/Ọ̀rúnmìlà, Ọ̀ṣun, Ọ̀sanyìn, Yemọja, Olókun, Ẹ̀là**
+
+23. Ògún, Ìja, Ọ̀ṣọ́ọ̀sì, Òrìṣà-Oko, Erinlẹ̀.
+
+24. Ṣàngó/Jàkúta, Ọya, Baáyànnì, Aganjú, Ọbalúayé/Ṣànpọ̀nná, Nàná-Bùkúù.
+
+25. Ọbàtálá/Òrìṣà Ńlá, Yemòó, Èṣù, Egúngún, Ẹgbẹ́-Ọ̀gbà/Alárá-Igbó, Orò, Ẹ̀lúkú, Agẹmọ, Òrìṣà Òkè, Ògìyán/Ògìrìyán.
+
+26. Ifá/Ọ̀rúnmìlà, Ọ̀ṣun, Ọ̀sanyìn, Yemọja, Olókun, Ẹ̀là***
+
+27. Ògún, ìja, Ọ̀ṣọ́ọ̀sì, Òrìṣà-Oko, Erinlẹ̀.
+
+28. Ṣàngó/Jàkúta, Ọya, Baáyànnì, Aganjú, Ọbalúayé/Ṣànpọ̀nná, Nàná-Bùkúù.
+
+29. Ọbàtálá/Òrìṣà Ńlá, Yemòó, Èṣù, Egúngún, Ẹgbẹ́-Ọ̀gbà/Alárá-Igbó, Orò, Ẹ̀lúkú, Agẹmọ, Òrìṣà Òkè, Ògìyán/Ògìrìyán.
+
+30. Ifá/Ọ̀rúnmìlà, Ọ̀ṣun, Ọ̀sanyìn, Yemọja, Olókun, Ẹ̀là.
+
+ *Note:*
+**** Ìtàdógún - Ọ̀ṣẹ̀ Awo.
+*** Isán - Ọ̀ṣẹ̀ Awo.
+** Ọrún - Ọ̀ṣẹ̀ Awo.
+
+Before Gregorian calendar, we used four days a week with which each day is dedicated to a group of Orisa. For instance
+Day 1. Obatala day
+Day 2. Ifa day
+Day 3. Ogun day
+Day 4: sango day
+
+However, it is counted as five (Orun) because Yoruba says we don’t count days as we count money. The difference is that when we count want to count days, you can’t the present day as part of it. As today is obatala day, the next obatala day is in the next five days because you count today with it, numerically, it’s four days.
+Also, note that Obatala owns days, but it was Orunmila that grouped the orisas into days.
+We also have ten months instead of 12 we have today. This is because we follow the moon hence our month is not up to 30days. We mark a new month when the crescent moon comes up and the month ends when there is a full moon.
+Ire ooo
+```

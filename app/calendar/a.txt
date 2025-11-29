@@ -1,16 +1,7 @@
-"use client";
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogClose,
-} from "@/components/ui/dialog";
 
 const FESTIVALS = [
   {
@@ -123,43 +114,16 @@ const FESTIVALS = [
   },
 ];
 
-const ORISA_DAILY = {
-  1: [
-    "Ọbàtálá/Òrìṣà-Ńlá",
-    "Yemòó",
-    "Èṣù",
-    "Egúngún",
-    "Ẹgbẹ́-Ọ̀gbà/Alárá-Igbó",
-    "Orô",
-    "Ẹ̀lúkú",
-    "Agẹmọ",
-    "Òrìṣà Òkè",
-    "Ògìyán/Ògìrìyán",
-  ],
-  2: ["Ifa/Ọ̀rúnmìlà", "Ọ̀ṣun", "Ọ̀sanyìn", "Yemọja", "Olókun", "Ẹ̀là"],
-  3: ["Ògún", "Ìja", "Ọ̀ṣọ́ọ̀sì", "Òrìṣà-Oko", "Erinlẹ̀"],
-  4: [
-    "Șàngó/Jàkúta",
-    "Ọya",
-    "Baáyànnì",
-    "Aganjú",
-    "Ọbalúayé/Ṣànpọ̀nná",
-    "Nàná-Bùkúù",
-  ],
-};
-
 const YORUBA_YEAR_OFFSET = 8042;
 const ORISA_NAMES = ["Obatala", "Orunmila", "Ogun", "Sango"];
 
 function toKeyDate(year: number, m: number, d: number) {
   return new Date(year, m - 1, d, 0, 0, 0, 0);
 }
-
 function inRange(date: Date, start: Date, end: Date) {
   const t = date.getTime();
   return t >= start.getTime() && t <= end.getTime();
 }
-
 function festivalInstancesForGregorianYear(gregYear: number) {
   return FESTIVALS.flatMap((f) => {
     const start = toKeyDate(gregYear, f.start.m, f.start.d);
@@ -176,11 +140,11 @@ function getYorubaYear(date: Date) {
   const y = date.getFullYear();
   const newYearThisGreg = toKeyDate(y, 6, 3);
   let yorubaYear = y + YORUBA_YEAR_OFFSET;
-  if (date.getTime() < newYearThisGreg.getTime())
+  if (date.getTime() < newYearThisGreg.getTime()) {
     yorubaYear = y - 1 + YORUBA_YEAR_OFFSET;
+  }
   return yorubaYear;
 }
-
 function getOrisaDayIndex(date: Date) {
   const y = date.getFullYear();
   let start = toKeyDate(y, 6, 3);
@@ -191,12 +155,10 @@ function getOrisaDayIndex(date: Date) {
   const idx = ((daysSince % 4) + 4) % 4; // 0..3
   return idx + 1; // 1..4
 }
-
 function getOrisaNameForDate(date: Date) {
   const idx = getOrisaDayIndex(date) - 1; // 0-based
   return ORISA_NAMES[idx];
 }
-
 function getBusinessWeekDayName(date: Date) {
   return [
     "Sunday",
@@ -212,7 +174,6 @@ function getBusinessWeekDayName(date: Date) {
 function startOfMonth(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 }
-
 function daysInMonth(date: Date) {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
 }
@@ -220,19 +181,10 @@ function daysInMonth(date: Date) {
 export default function Page() {
   const today = new Date();
   const [cursor, setCursor] = useState(
-    new Date(today.getFullYear(), today.getMonth(), 1)
+    () => new Date(today.getFullYear(), today.getMonth(), 1)
   );
   const [showFourDayCycle, setShowFourDayCycle] = useState(true);
-  const [orisaModalOpen, setOrisaModalOpen] = useState(false);
 
-  const [dayModalOpen, setDayModalOpen] = useState(false);
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
-
-  function openDayModal(day: number) {
-    setSelectedDay(day);
-    setDayModalOpen(true);
-  }
-  
   const festivals = useMemo(() => {
     const y = cursor.getFullYear();
     return [
@@ -245,7 +197,7 @@ export default function Page() {
   const grid = useMemo(() => {
     const start = startOfMonth(cursor);
     const dim = daysInMonth(start);
-    const firstWeekday = start.getDay(); // 0..6
+    const firstWeekday = start.getDay(); // 0..6 (Sun..Sat)
     const cells: ({ date: Date; festivals: any[] } | null)[] = [];
 
     for (let i = 0; i < firstWeekday; i++) cells.push(null);
@@ -272,35 +224,31 @@ export default function Page() {
 
   return (
     <div className="p-6">
-      {" "}
       <Card className="rounded-2xl">
-        {" "}
         <CardContent>
-          {" "}
           <header className="flex items-center justify-between mb-4">
-            {" "}
             <div>
-              {" "}
               <h1 className="text-2xl font-semibold">
                 Kọ́jọ́dá — Yoruba Calendar
-              </h1>{" "}
+              </h1>
               <p className="text-sm text-muted-foreground">
-                Yoruba year starts June 3 • Toggle Orisa 4-day cycle{" "}
-              </p>{" "}
-            </div>{" "}
+                Yoruba year starts June 3 • Toggle Orisa 4-day cycle
+              </p>
+            </div>
+
             <div className="flex items-center gap-2">
-              {" "}
               <Button onClick={gotoPrevMonth} variant="ghost">
                 Prev
-              </Button>{" "}
+              </Button>
               <Button onClick={gotoToday} variant="outline">
                 Today
-              </Button>{" "}
+              </Button>
               <Button onClick={gotoNextMonth} variant="ghost">
                 Next
-              </Button>{" "}
-            </div>{" "}
+              </Button>
+            </div>
           </header>
+
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <div className="text-sm">
@@ -324,11 +272,9 @@ export default function Page() {
                 />
                 <span>Show 4-day Orisa cycle</span>
               </div>
-              <Button onClick={() => setOrisaModalOpen(true)} variant="outline">
-                Show All Orisa
-              </Button>
             </div>
           </div>
+
           <div className="grid grid-cols-7 gap-1 bg-card rounded overflow-hidden border">
             {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((wd) => (
               <div
@@ -338,6 +284,7 @@ export default function Page() {
                 {wd}
               </div>
             ))}
+
             {grid.map((cell, i) => {
               if (!cell)
                 return (
@@ -364,13 +311,23 @@ export default function Page() {
                       {businessName}
                     </div>
                   </div>
+
                   <div className="mt-1 text-xs">
                     <div className="text-[11px]">
-                      Orisa: <strong>{orisaName}</strong>
+                      {showFourDayCycle ? (
+                        <>
+                          Orisa: <strong>{orisaName}</strong>
+                        </>
+                      ) : (
+                        <>
+                          Orisa (calc): <strong>{orisaName}</strong>
+                        </>
+                      )}
                     </div>
                   </div>
+
                   <div className="mt-2 space-y-1">
-                    {festivals.map((f) => (
+                    {festivals.slice(0, 2).map((f) => (
                       <div
                         key={f.id}
                         className="text-[12px] px-1 py-0.5 rounded border-l-4 border-primary/60 bg-primary/10"
@@ -378,11 +335,17 @@ export default function Page() {
                         {f.title}
                       </div>
                     ))}
+                    {festivals.length > 2 && (
+                      <div className="text-[11px] text-muted-foreground">
+                        +{festivals.length - 2} more
+                      </div>
+                    )}
                   </div>
                 </div>
               );
             })}
           </div>
+
           <section className="mt-6">
             <h2 className="text-lg font-semibold mb-2">Legend & Quick Info</h2>
             <ul className="list-disc pl-5 text-sm space-y-1 text-muted-foreground">
@@ -396,25 +359,40 @@ export default function Page() {
                 Year (June 3 = Obatala / Day 1).
               </li>
             </ul>
-          </section>
-          {/* Orisa Modal */}
-          <Dialog open={orisaModalOpen} onOpenChange={setOrisaModalOpen}>
-            <DialogContent className="max-w-sm">
-              <DialogHeader>
-                <DialogTitle>All Orisa Names</DialogTitle>
-              </DialogHeader>
-              <ul className="list-disc pl-5 space-y-1 mt-2">
-                {ORISA_NAMES.map((name) => (
-                  <li key={name}>{name}</li>
-                ))}
-              </ul>
-              <div className="mt-4 flex justify-end">
-                <DialogClose asChild>
-                  <Button>Close</Button>
-                </DialogClose>
+
+            <div className="mt-4">
+              <h3 className="font-medium">Upcoming festivals this month</h3>
+              <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                {festivals
+                  .filter((f) =>
+                    inRange(
+                      new Date(cursor.getFullYear(), cursor.getMonth(), 15),
+                      f.start,
+                      f.end
+                    )
+                  )
+                  .map((f) => (
+                    <div key={f.id} className="p-3 border rounded">
+                      <div className="font-semibold">{f.title}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {f.start.toDateString()} — {f.end.toDateString()}
+                      </div>
+                    </div>
+                  ))}
+                {festivals.filter((f) =>
+                  inRange(
+                    new Date(cursor.getFullYear(), cursor.getMonth(), 15),
+                    f.start,
+                    f.end
+                  )
+                ).length === 0 && (
+                  <div className="text-sm text-muted-foreground">
+                    No major festivals listed for this month in our dataset.
+                  </div>
+                )}
               </div>
-            </DialogContent>
-          </Dialog>
+            </div>
+          </section>
         </CardContent>
       </Card>
     </div>
