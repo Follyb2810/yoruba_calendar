@@ -340,65 +340,72 @@ export default function Page() {
               </Button>
             </div>
           </div>
-          <div className="grid grid-cols-7 gap-1 bg-card rounded overflow-hidden border text-[10px] sm:text-xs md:text-sm">
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((wd) => (
-              <div
-                key={wd}
-                className="py-2 text-center font-medium bg-muted border-b"
-              >
-                {wd}
-              </div>
-            ))}
-            {grid.map((cell, i) => {
-              if (!cell)
+          <div className="overflow-x-auto">
+            <div className="grid grid-cols-7 gap-1 bg-card rounded overflow-hidden border text-[10px] sm:text-xs md:text-sm min-w-[600px]">
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((wd) => (
+                <div
+                  key={wd}
+                  className="py-2 text-center font-medium bg-muted border-b"
+                >
+                  {wd}
+                </div>
+              ))}
+              {grid.map((cell, i) => {
+                if (!cell)
+                  return (
+                    <div
+                      key={i}
+                      className="p-2 border min-h-[90px] bg-muted/40"
+                    />
+                  );
+                const { date, festivals } = cell;
+                const isToday = date.toDateString() === today.toDateString();
+                const orisaName = showFourDayCycle
+                  ? getOrisaNameForDate(date)
+                  : "";
+                let orisaColor = showFourDayCycle
+                  ? getOrisaColor(orisaName)
+                  : "";
+                if (orisaColor.includes("bg-green-200"))
+                  orisaColor = "bg-green-200 text-black";
+
+                const businessName = getBusinessWeekDayName(date);
+
                 return (
                   <div
                     key={i}
-                    className="p-2 border min-h-[90px] bg-muted/40"
-                  />
-                );
-              const { date, festivals } = cell;
-              const isToday = date.toDateString() === today.toDateString();
-              const orisaName = showFourDayCycle
-                ? getOrisaNameForDate(date)
-                : "";
-              const orisaColor = showFourDayCycle
-                ? getOrisaColor(orisaName)
-                : "";
-              const businessName = getBusinessWeekDayName(date);
-
-              return (
-                <div
-                  key={i}
-                  className={`p-1 sm:p-2 border min-h-[70px] sm:min-h-[90px] ${orisaColor} ${
-                    isToday ? "border-2 border-black" : ""
-                  }`}
-                  onClick={() => openDayModal(date.getDate())}
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="text-sm font-medium">{date.getDate()}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {businessName}
-                    </div>
-                  </div>
-                  {showFourDayCycle && (
-                    <div className="mt-1 text-xs text-[11px]">
-                      <strong>{orisaName}</strong>
-                    </div>
-                  )}
-                  <div className="mt-2 space-y-1">
-                    {festivals.map((f) => (
-                      <div
-                        key={f.id}
-                        className="text-[12px] px-1 py-0.5 rounded border-l-4 border-primary/60 bg-primary/10"
-                      >
-                        {f.title}
+                    className={`p-1 sm:p-2 border min-h-[70px] sm:min-h-[90px] ${orisaColor} ${
+                      isToday ? "border-2 border-black" : ""
+                    }`}
+                    onClick={() => openDayModal(date.getDate())}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="text-sm font-medium">
+                        {date.getDate()}
                       </div>
-                    ))}
+                      <div className="text-xs text-muted-foreground">
+                        {businessName}
+                      </div>
+                    </div>
+                    {showFourDayCycle && (
+                      <div className="mt-1 text-xs text-[11px]">
+                        <strong>{orisaName}</strong>
+                      </div>
+                    )}
+                    <div className="mt-2 space-y-1">
+                      {festivals.map((f) => (
+                        <div
+                          key={f.id}
+                          className="text-[12px] px-1 py-0.5 rounded border-l-4 border-primary/60 bg-primary/10"
+                        >
+                          {f.title}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
           <section className="mt-6">
             <h2 className="text-lg font-semibold mb-2">Legend & Quick Info</h2>
