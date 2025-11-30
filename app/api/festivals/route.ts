@@ -17,9 +17,12 @@ export async function GET(req: NextRequest) {
       skip,
       take: limit,
     });
-    return NextResponse.json(festivals);
+    return NextResponse.json({ festivals });
   } catch {
-    return NextResponse.json({ error: "Failed to fetch Festivals" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch Festivals" },
+      { status: 500 }
+    );
   }
 }
 
@@ -28,8 +31,11 @@ export async function POST(req: NextRequest) {
   const data = await req.json();
   try {
     const festival = await prisma.festival.create({ data });
-    return NextResponse.json(festival);
+    return NextResponse.json({ festival }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: "Failed to create Festival" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to create Festival" },
+      { status: 500 }
+    );
   }
 }

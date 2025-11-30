@@ -26,7 +26,6 @@ const CalendarHeader: FC<CalendarHeaderProps> = ({
 }) => {
   return (
     <header className="flex flex-col gap-4 mb-4">
-      {/* Row 1: Title */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-semibold truncate">
@@ -36,7 +35,6 @@ const CalendarHeader: FC<CalendarHeaderProps> = ({
             Yoruba year starts June 3 • Toggle Orisa 4-day cycle
           </p>
         </div>
-        {/* Navigation Buttons */}
         <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
           <Button onClick={gotoPrevMonth} variant="ghost">
             Prev
@@ -50,13 +48,15 @@ const CalendarHeader: FC<CalendarHeaderProps> = ({
         </div>
       </div>
 
-      {/* Row 2: Info & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex flex-col sm:flex-row gap-2 text-sm">
           <div>
             Viewing:{" "}
             <strong>
-              {cursor.toLocaleString(undefined, { month: "long", year: "numeric" })}
+              {cursor.toLocaleString(undefined, {
+                month: "long",
+                year: "numeric",
+              })}
             </strong>
           </div>
           <div>

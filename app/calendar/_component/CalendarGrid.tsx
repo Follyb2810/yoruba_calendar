@@ -48,7 +48,7 @@ const CalendarGrid: FC<CalendarGridProps> = ({
             <div
               key={i}
               className={`p-1 sm:p-2 border min-h-[70px] sm:min-h-[90px] ${bgClass} ${textClass} ${
-                isToday ? "border-2 border-black" : ""
+                isToday ? "today-dotted" : ""
               }`}
               onClick={() => openDayModal(date.getDate())}
             >

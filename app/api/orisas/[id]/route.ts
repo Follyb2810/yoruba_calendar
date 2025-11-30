@@ -4,12 +4,15 @@ import { NextRequest, NextResponse } from "next/server";
 // GET /api/orisas/:id
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const id = Number(params.id);
+  // ctx: RouteContext<'/users/[id]'>
+  // const { id } = await ctx.params
+  const { id } = await params;
+  const idx = Number(id);
   try {
     const orisa = await prisma.orisa.findUnique({
-      where: { id },
+      where: { id: idx },
       include: { festivals: true },
     });
     if (!orisa)
@@ -26,12 +29,15 @@ export async function GET(
 // PUT /api/orisas/:id
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  ctx: RouteContext<"/api/orisas/[id]">
 ) {
-  const id = Number(params.id);
+  const { id } = await ctx.params;
   const data = await req.json();
   try {
-    const orisa = await prisma.orisa.update({ where: { id }, data });
+    const orisa = await prisma.orisa.update({
+      where: { id: Number(id) },
+      data,
+    });
     return NextResponse.json(orisa);
   } catch {
     return NextResponse.json(
@@ -44,11 +50,11 @@ export async function PUT(
 // DELETE /api/orisas/:id
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  ctx: RouteContext<"/api/orisas/[id]">
 ) {
-  const id = Number(params.id);
+  const { id } = await ctx.params;
   try {
-    await prisma.orisa.delete({ where: { id } });
+    await prisma.orisa.delete({ where: { id: Number(id) } });
     return NextResponse.json({ message: "Orisa deleted" });
   } catch {
     return NextResponse.json(

@@ -120,3 +120,9 @@
     @apply bg-background text-foreground;
   }
 }
+
+.today-dotted {
+  border: 2px dotted #000;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.25);
+  border-radius: 6px;
+}

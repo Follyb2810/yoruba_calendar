@@ -1,11 +1,12 @@
+export const BusinessDay = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
 export function getBusinessWeekDayName(date: Date) {
-  return [
-    "Sunday",
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-  ][date.getDay()];
+  return BusinessDay[date.getDay()];
 }
