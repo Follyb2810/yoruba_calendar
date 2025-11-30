@@ -61,16 +61,6 @@ const CalendarGrid: FC<CalendarGridProps> = ({
                   {orisaName}
                 </div>
               )}
-              <div className="mt-2 space-y-1">
-                {festivals.map((f) => (
-                  <div
-                    key={f.id}
-                    className="text-[12px] px-1 py-0.5 rounded border-l-4 border-primary/60 bg-primary/10"
-                  >
-                    {f.title}
-                  </div>
-                ))}
-              </div>
             </div>
           );
         })}

@@ -15,11 +15,12 @@
     "prisma:seed": "prisma db seed",
     "seed": "npx ts-node prisma/seed.ts",
     "seed_bs": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts",
-     "seed_db": "ts-node --project tsconfig.local.json prisma/seed.ts"
+    "seed_db": "ts-node --project tsconfig.local.json prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.0.1",
     "@prisma/client": "^7.0.1",
+    "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.4",
