@@ -98,6 +98,8 @@ async function main() {
   for (const f of FESTIVALS) {
     await prisma.festival.create({
       data: {
+        endYear: f.endDay,
+        startYear: f.startDay,
         title: f.title,
         startMonth: f.startMonth,
         startDay: f.startDay,

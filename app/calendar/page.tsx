@@ -53,7 +53,7 @@ export default function Page() {
   }
 
   return (
-    <div className="p-6">
+    <div className="max-w-5xl mx-auto px-6 py-16 space-y-16">
       <CalendarHeader
         cursor={cursor}
         showFourDayCycle={showFourDayCycle}

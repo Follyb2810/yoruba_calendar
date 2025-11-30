@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,18 +11,62 @@ import {
   SelectItem,
   SelectContent,
 } from "@/components/ui/select";
+import { TOrisa } from "@/app/orisha/page";
+
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+const YORUBA_WEEK_DAYS = [
+  "Aiku",
+  "Aje",
+  "Isegun",
+  "Ojoru",
+  "Ojobo",
+  "Eti",
+  "Abameta",
+];
+
+function getDaysInMonth(month: number, year: number) {
+  return new Date(year, month, 0).getDate();
+}
+
+function formatYorubaDate(day: number, month: number, year: number) {
+  const date = new Date(year, month - 1, day);
+  const weekDay = YORUBA_WEEK_DAYS[date.getDay()];
+  const monthName = MONTH_NAMES[month - 1];
+  return `${weekDay}, ${day} ${monthName} ${year}`;
+}
 
 export default function NewFestivalPage() {
   const [title, setTitle] = useState("");
   const [orisaId, setOrisaId] = useState<number | null>(null);
-  const [orisas, setOrisas] = useState([]);
+  const [orisas, setOrisas] = useState<TOrisa[] | []>([]);
 
-  const [startMonth, setStartMonth] = useState("1");
-  const [startDay, setStartDay] = useState("1");
-  const [endMonth, setEndMonth] = useState("1");
-  const [endDay, setEndDay] = useState("1");
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth() + 1;
+  const currentDay = today.getDate();
 
-  // Load Orisas
+  const [startYear, setStartYear] = useState(String(currentYear));
+  const [startMonth, setStartMonth] = useState(String(currentMonth));
+  const [startDay, setStartDay] = useState(String(currentDay));
+
+  const [endYear, setEndYear] = useState(String(currentYear));
+  const [endMonth, setEndMonth] = useState(String(currentMonth));
+  const [endDay, setEndDay] = useState(String(currentDay));
+
   useEffect(() => {
     (async () => {
       const res = await fetch("/api/orisha");
@@ -31,25 +75,82 @@ export default function NewFestivalPage() {
     })();
   }, []);
 
-  async function submitFestival() {
-    await fetch("/api/festivals", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title,
-        orisaId,
-        startMonth: Number(startMonth),
-        startDay: Number(startDay),
-        endMonth: Number(endMonth),
-        endDay: Number(endDay),
-      }),
-    });
+  useEffect(() => {
+    const maxDays = getDaysInMonth(Number(startMonth), Number(startYear));
+    if (Number(startDay) > maxDays) setStartDay(String(maxDays));
+  }, [startMonth, startYear]);
 
-    alert("Festival created!");
+  useEffect(() => {
+    const maxDays = getDaysInMonth(Number(endMonth), Number(endYear));
+    if (Number(endDay) > maxDays) setEndDay(String(maxDays));
+  }, [endMonth, endYear]);
+
+  const startDateString = useMemo(
+    () =>
+      formatYorubaDate(Number(startDay), Number(startMonth), Number(startYear)),
+    [startDay, startMonth, startYear]
+  );
+  const endDateString = useMemo(
+    () => formatYorubaDate(Number(endDay), Number(endMonth), Number(endYear)),
+    [endDay, endMonth, endYear]
+  );
+
+  async function submitFestival() {
+    try {
+      const res = await fetch("/api/festivals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          orisaId,
+          startYear: Number(startYear),
+          startMonth: Number(startMonth),
+          startDay: Number(startDay),
+          endYear: Number(endYear),
+          endMonth: Number(endMonth),
+          endDay: Number(endDay),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(`Error: ${data.error}`);
+        return;
+      }
+      alert(
+        `Festival "${title}" created!\nStart: ${startDateString}\nEnd: ${endDateString}`
+      );
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong while creating the festival.");
+    }
   }
 
+  const yearOptions = Array.from({ length: 6 }, (_, i) => currentYear + i);
+
+  const availableStartMonths = Array.from(
+    { length: 12 },
+    (_, i) => i + 1
+  ).filter((m) => Number(startYear) > currentYear || m >= currentMonth);
+
+  const availableEndMonths = Array.from({ length: 12 }, (_, i) => i + 1).filter(
+    (m) => Number(endYear) > currentYear || m >= currentMonth
+  );
+
+  const getAvailableDays = (year: number, month: number) => {
+    const maxDays = getDaysInMonth(month, year);
+    if (year === currentYear && month === currentMonth) {
+      return Array.from(
+        { length: maxDays - currentDay + 1 },
+        (_, i) => i + currentDay
+      );
+    }
+    return Array.from({ length: maxDays }, (_, i) => i + 1);
+  };
+
   return (
-    <div className="max-w-xl mx-auto pt-10">
+    <section className="max-w-5xl mx-auto px-6 py-16 space-y-16">
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl font-bold">Create Festival</CardTitle>
@@ -72,7 +173,7 @@ export default function NewFestivalPage() {
                 <SelectValue placeholder="Choose Orisa" />
               </SelectTrigger>
               <SelectContent>
-                {orisas.map((o: any) => (
+                {orisas.map((o) => (
                   <SelectItem key={o.id} value={String(o.id)}>
                     {o.name}
                   </SelectItem>
@@ -81,17 +182,30 @@ export default function NewFestivalPage() {
             </Select>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <label className="text-sm font-medium">Start Date</label>
             <div className="flex gap-2">
+              <Select value={startYear} onValueChange={setStartYear}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {yearOptions.map((y) => (
+                    <SelectItem key={y} value={String(y)}>
+                      {y}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
               <Select value={startMonth} onValueChange={setStartMonth}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {Array.from({ length: 12 }, (_, i) => (
-                    <SelectItem key={i + 1} value={String(i + 1)}>
-                      Month {i + 1}
+                  {availableStartMonths.map((m) => (
+                    <SelectItem key={m} value={String(m)}>
+                      {MONTH_NAMES[m - 1]}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -102,28 +216,46 @@ export default function NewFestivalPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {Array.from({ length: 31 }, (_, i) => (
-                    <SelectItem key={i + 1} value={String(i + 1)}>
-                      {i + 1}
-                    </SelectItem>
-                  ))}
+                  {getAvailableDays(Number(startYear), Number(startMonth)).map(
+                    (d) => (
+                      <SelectItem key={d} value={String(d)}>
+                        {d}
+                      </SelectItem>
+                    )
+                  )}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Selected: {startDateString}
             </div>
           </div>
 
           {/* End Date */}
-          <div className="space-y-2">
+          <div className="space-y-1">
             <label className="text-sm font-medium">End Date</label>
             <div className="flex gap-2">
+              <Select value={endYear} onValueChange={setEndYear}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {yearOptions.map((y) => (
+                    <SelectItem key={y} value={String(y)}>
+                      {y}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
               <Select value={endMonth} onValueChange={setEndMonth}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {Array.from({ length: 12 }, (_, i) => (
-                    <SelectItem key={i + 1} value={String(i + 1)}>
-                      Month {i + 1}
+                  {availableEndMonths.map((m) => (
+                    <SelectItem key={m} value={String(m)}>
+                      {MONTH_NAMES[m - 1]}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -134,13 +266,18 @@ export default function NewFestivalPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {Array.from({ length: 31 }, (_, i) => (
-                    <SelectItem key={i + 1} value={String(i + 1)}>
-                      {i + 1}
-                    </SelectItem>
-                  ))}
+                  {getAvailableDays(Number(endYear), Number(endMonth)).map(
+                    (d) => (
+                      <SelectItem key={d} value={String(d)}>
+                        {d}
+                      </SelectItem>
+                    )
+                  )}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Selected: {endDateString}
             </div>
           </div>
 
@@ -149,6 +286,6 @@ export default function NewFestivalPage() {
           </Button>
         </CardContent>
       </Card>
-    </div>
+    </section>
   );
 }

@@ -1,0 +1,31 @@
+useEffect(() => {
+  async function fetchFestivals() {
+    try {
+      const res = await fetch("/api/festivals?limit=50");
+      if (!res.ok) throw new Error("Failed to fetch Festivals");
+
+      // Type the JSON response
+      const data: FestivalsResponse = await res.json();
+
+      setFestivals(data.festivals);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+  fetchFestivals();
+}, []);
+
+
+import { useQuery } from '@tanstack/react-query';
+
+const { data, isLoading, error } = useQuery<Festival[], Error>(
+  ['festivals'],
+  async () => {
+    const res = await fetch('/api/festivals?limit=50');
+    if (!res.ok) throw new Error('Failed to fetch Festivals');
+    const json: FestivalsResponse = await res.json();
+    return json.festivals;
+  }
+);

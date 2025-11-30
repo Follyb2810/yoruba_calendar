@@ -31,7 +31,7 @@ export default function NewOrisaPage() {
   }
 
   return (
-    <div className="p-6 max-w-md mx-auto space-y-4">
+    <section className="max-w-5xl mx-auto px-6 py-16 space-y-16">
       <h1 className="text-xl font-bold">Create New Orisa</h1>
       <input
         className="w-full p-2 border rounded"
@@ -47,6 +47,6 @@ export default function NewOrisaPage() {
         {loading ? "Creating..." : "Create"}
       </button>
       {message && <p>{message}</p>}
-    </div>
+    </section>
   );
 }

@@ -18,7 +18,7 @@ export default function Navbar() {
         <div className="hidden md:flex gap-6 text-sm font-medium">
           <Link href="/">Home</Link>
           <Link href="/calendar">Calendar</Link>
-          <Link href="/festivals/new">Festivals</Link>
+          <Link href="/festivals">Festivals</Link>
           <Link href="/orisha">Orisha</Link>
         </div>
         <Button

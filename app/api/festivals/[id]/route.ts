@@ -6,7 +6,6 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  // const id =await Number((await params).id);
   const { id } = await params;
   try {
     const festival = await prisma.festival.findUnique({
@@ -15,7 +14,7 @@ export async function GET(
     });
     if (!festival)
       return NextResponse.json({ error: "Not found" }, { status: 404 });
-    return NextResponse.json(festival);
+    return NextResponse.json({ festival }, { status: 200 });
   } catch {
     return NextResponse.json(
       { error: "Failed to fetch Festival" },
