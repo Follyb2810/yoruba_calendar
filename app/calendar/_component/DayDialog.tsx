@@ -29,8 +29,8 @@ export const DayDialog: FC<DayDialogProps> = ({
       </DialogHeader>
       <ul className="list-disc pl-5 space-y-1 mt-2">
         {selectedDay &&
-          (dailyOrisas[selectedDay % 4 || 4] || []).map((o) => (
-            <li key={o}>{o}</li>
+          (dailyOrisas[selectedDay % 4 || 4] || []).map((orishaName) => (
+            <li key={orishaName}>{orishaName}</li>
           ))}
       </ul>
       <div className="mt-4 flex justify-end">
