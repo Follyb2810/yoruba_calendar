@@ -1,7 +1,7 @@
 import { prisma } from "@/utils/prisma-client";
 import { NextRequest, NextResponse } from "next/server";
 
-// GET /api/orisas?skip=0&limit=10&search=Olokun
+// GET /api/orisha?skip=0&limit=10&search=Olokun
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const skip = Number(searchParams.get("skip") || 0);
@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   const search = searchParams.get("search") || "";
 
   try {
-    const orisas = await prisma.orisa.findMany({
+    const orisha = await prisma.orisa.findMany({
       where: {
         name: { contains: search },
       },
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
       skip,
       take: limit,
     });
-    return NextResponse.json(orisas);
+    return NextResponse.json(orisha);
   } catch (error) {
     return NextResponse.json(
       { error: "Failed to fetch Orisas" },
@@ -26,16 +26,21 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/orisas
 export async function POST(req: NextRequest) {
-  const data = await req.json();
   try {
-    const orisa = await prisma.orisa.create({ data });
+    const body = await req.json();
+    const { name } = body;
+
+    if (!name) {
+      return NextResponse.json({ error: "Name is required" }, { status: 400 });
+    }
+
+    const orisa = await prisma.orisa.create({
+      data: { name },
+    });
+
     return NextResponse.json(orisa);
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Failed to create Orisa" },
-      { status: 500 }
-    );
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

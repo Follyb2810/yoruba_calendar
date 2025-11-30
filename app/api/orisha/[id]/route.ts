@@ -1,7 +1,7 @@
 import { prisma } from "@/utils/prisma-client";
 import { NextRequest, NextResponse } from "next/server";
 
-// GET /api/orisas/:id
+// GET /api/orisha/:id
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -26,10 +26,10 @@ export async function GET(
   }
 }
 
-// PUT /api/orisas/:id
+// PUT /api/orisha/:id
 export async function PUT(
   req: NextRequest,
-  ctx: RouteContext<"/api/orisas/[id]">
+  ctx: RouteContext<"/api/orisha/[id]">
 ) {
   const { id } = await ctx.params;
   const data = await req.json();
@@ -47,10 +47,10 @@ export async function PUT(
   }
 }
 
-// DELETE /api/orisas/:id
+// DELETE /api/orisha/:id
 export async function DELETE(
   req: NextRequest,
-  ctx: RouteContext<"/api/orisas/[id]">
+  ctx: RouteContext<"/api/orisha/[id]">
 ) {
   const { id } = await ctx.params;
   try {

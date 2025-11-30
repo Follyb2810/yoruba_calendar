@@ -6,7 +6,7 @@ import { FC } from "react";
 
 interface GridCell {
   date: Date;
-  festivals: any[];
+  // festivals: any[];
 }
 
 interface CalendarGridProps {
@@ -38,7 +38,7 @@ const CalendarGrid: FC<CalendarGridProps> = ({
             return (
               <div key={i} className="p-2 border min-h-[90px] bg-muted/40" />
             );
-          const { date, festivals } = cell;
+          const { date } = cell;
           const isToday = date.toDateString() === today.toDateString();
           const orisaName = showFourDayCycle ? getOrisaNameForDate(date) : "";
           const orisaColor = showFourDayCycle ? getOrisaColor(orisaName) : "";

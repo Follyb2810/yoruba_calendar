@@ -10,10 +10,6 @@ import {
 import CalendarGrid from "./_component/CalendarGrid";
 import { OrisaDialog } from "./_component/OrisaDialog";
 import { DayDialog } from "./_component/DayDialog";
-import {
-  festivalInstancesForGregorianYear,
-  inRange,
-} from "@/utils/getOrisaNameForDate";
 
 export default function Page() {
   const today = new Date();
@@ -25,29 +21,22 @@ export default function Page() {
   const [dayModalOpen, setDayModalOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
-  const festivals = useMemo(() => {
-    const y = cursor.getFullYear();
-    return [
-      ...festivalInstancesForGregorianYear(y - 1),
-      ...festivalInstancesForGregorianYear(y),
-      ...festivalInstancesForGregorianYear(y + 1),
-    ];
-  }, [cursor]);
-
   const grid = useMemo(() => {
     const start = startOfMonth(cursor);
     const dim = daysInMonth(start);
     const firstWeekday = start.getDay();
-    const cells: ({ date: Date; festivals: any[] } | null)[] = [];
+    const cells: ({ date: Date } | null)[] = [];
     for (let i = 0; i < firstWeekday; i++) cells.push(null);
+
     for (let d = 1; d <= dim; d++) {
       const date = new Date(start.getFullYear(), start.getMonth(), d);
-      const dayFests = festivals.filter((f) => inRange(date, f.start, f.end));
-      cells.push({ date, festivals: dayFests });
+      cells.push({ date });
     }
+
     while (cells.length % 7 !== 0) cells.push(null);
+
     return cells;
-  }, [cursor, festivals]);
+  }, [cursor]);
 
   function gotoPrevMonth() {
     setCursor((c) => new Date(c.getFullYear(), c.getMonth() - 1, 1));

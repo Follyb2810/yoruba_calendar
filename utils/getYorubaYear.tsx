@@ -1,21 +1,26 @@
-import { ORISA_NAMES, YORUBA_YEAR_OFFSET } from "@/app/calendar/_component/mocks";
+import {
+  ORISA_NAMES,
+  YORUBA_YEAR_OFFSET,
+} from "@/app/calendar/_component/mocks";
 import { toKeyDate } from "./getOrisaNameForDate";
 
 export function getYorubaYear(date: Date) {
-  const y = date.getFullYear();
-  const newYearThisGreg = toKeyDate(y, 6, 3);
-  let yorubaYear = y + YORUBA_YEAR_OFFSET;
+  const newyear = date.getFullYear();
+  const newYearThisGreg = toKeyDate(newyear, 6, 3);
+  let yorubaYear = newyear + YORUBA_YEAR_OFFSET;
   if (date.getTime() < newYearThisGreg.getTime())
-    yorubaYear = y - 1 + YORUBA_YEAR_OFFSET;
+    yorubaYear = newyear - 1 + YORUBA_YEAR_OFFSET;
   return yorubaYear;
 }
 
 export function getOrisaDayIndex(date: Date) {
-  const y = date.getFullYear();
-  let start = toKeyDate(y, 6, 3);
-  if (date.getTime() < start.getTime()) start = toKeyDate(y - 1, 6, 3);
+  const newyear = date.getFullYear();
+  let newYearThisGreg = toKeyDate(newyear, 6, 3);
+  const oneDay = 1000 * 60 * 60 * 24;
+  if (date.getTime() < newYearThisGreg.getTime())
+    newYearThisGreg = toKeyDate(newyear - 1, 6, 3);
   const daysSince = Math.floor(
-    (date.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+    (date.getTime() - newYearThisGreg.getTime()) / oneDay
   );
   const idx = ((daysSince % 4) + 4) % 4;
   return idx + 1;

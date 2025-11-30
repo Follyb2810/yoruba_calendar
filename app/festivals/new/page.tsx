@@ -25,7 +25,7 @@ export default function NewFestivalPage() {
   // Load Orisas
   useEffect(() => {
     (async () => {
-      const res = await fetch("/api/orisa");
+      const res = await fetch("/api/orisha");
       const data = await res.json();
       setOrisas(data);
     })();
