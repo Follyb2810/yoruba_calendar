@@ -1,18 +1,30 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GithubProvider from "next-auth/providers/github";
+import GoogleProvider from "next-auth/providers/google";
+import TwitterProvider from "next-auth/providers/twitter";
+
 import { prisma } from "@/utils/prisma-client";
 import bcrypt from "bcrypt";
 
+// Strongly typed user object for Credentials provider
+interface AuthUser {
+  id: string;
+  email: string;
+  name?: string | null;
+  roles: string[];
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
+    // ACTIVE: Credentials login
     CredentialsProvider({
       name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials): Promise<AuthUser | null> {
         if (!credentials?.email || !credentials?.password) return null;
 
         const user = await prisma.user.findUnique({
@@ -27,7 +39,9 @@ export const authOptions: NextAuthOptions = {
           user.password
         );
         if (!isValid) return null;
-        const roles = user.roles.map((ur) => ur.role.name);
+
+        const roles = user.roles?.map((ur) => ur.role.name) ?? [];
+
         return {
           id: user.id,
           email: user.email,
@@ -36,27 +50,51 @@ export const authOptions: NextAuthOptions = {
         };
       },
     }),
+
     GithubProvider({
-      clientId: process.env.GITHUB_ID!,
-      clientSecret: process.env.GITHUB_SECRET!,
+      clientId: process.env.GITHUB_ID || "",
+      clientSecret: process.env.GITHUB_SECRET || "",
+    }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_ID || "",
+      clientSecret: process.env.GOOGLE_SECRET || "",
+    }),
+    TwitterProvider({
+      clientId: process.env.TWITTER_ID || "",
+      clientSecret: process.env.TWITTER_SECRET || "",
+      version: "2.0",
     }),
   ],
+
   session: {
     strategy: "jwt",
   },
+
   callbacks: {
     jwt: async ({ token, user }) => {
       if (user) {
-        (token as any).roles = (user as any).roles;
+        token.sub = (user as AuthUser).id;
+        token.roles = (user as AuthUser).roles;
       }
       return token;
     },
+
     session: async ({ session, token }) => {
-      (session.user as any).id = token.sub;
-      (session.user as any).roles = (token as any).roles || [];
+      session.user = {
+        ...session.user,
+        id: token.sub!,
+        roles: token.roles ?? [],
+      };
       return session;
     },
   },
+
+  pages: {
+    signIn: "/auth/signin",
+  },
+
+  secret: process.env.NEXTAUTH_SECRET,
 };
 
+// export default NextAuth(authOptions);
 export const { handlers, auth, signIn, signOut } = NextAuth(authOptions);
