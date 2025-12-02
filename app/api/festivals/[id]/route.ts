@@ -1,6 +1,6 @@
 import { prisma } from "@/utils/prisma-client";
 import { NextRequest, NextResponse } from "next/server";
-
+// await requireRole(["VERIFIED", "ADMIN"]);
 // GET /api/festivals/:id
 export async function GET(
   req: NextRequest,

@@ -19,7 +19,7 @@ export default function Navbar() {
           <Link href="/">Home</Link>
           <Link href="/calendar">Calendar</Link>
           <Link href="/festivals">Festivals</Link>
-          <Link href="/orisha">Orisha</Link>
+          <Link href="/orisha/new">Orisha</Link>
         </div>
         <Button
           size="icon"

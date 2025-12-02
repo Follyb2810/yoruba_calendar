@@ -1,6 +1,7 @@
 import { prisma } from "@/utils/prisma-client";
 import { NextRequest, NextResponse } from "next/server";
 
+//  const session = await requireRole(["USER", "VERIFIED", "ADMIN"]);
 // GET /api/festivals?skip=0&limit=10&search=Sango
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);

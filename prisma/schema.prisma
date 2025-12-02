@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -10,6 +7,32 @@ datasource db {
   provider = "sqlite"
 }
 
+model User {
+  id        String     @id @default(cuid())
+  name      String?
+  email     String     @unique
+  password  String
+  roles     UserRole[]
+  festivals Festival[]
+  createdAt DateTime   @default(now())
+}
+
+model Role {
+  id    String     @id @default(cuid())
+  name  String     @unique
+  users UserRole[]
+}
+
+model UserRole {
+  id     String @id @default(cuid())
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+  role   Role   @relation(fields: [roleId], references: [id])
+  roleId String
+
+  @@unique([userId, roleId])
+}
+
 model Orisa {
   id        Int        @id @default(autoincrement())
   name      String     @unique
@@ -17,7 +40,7 @@ model Orisa {
 }
 
 model Festival {
-  id         Int    @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   title      String
   startYear  Int
   startMonth Int
@@ -25,6 +48,10 @@ model Festival {
   endYear    Int
   endMonth   Int
   endDay     Int
+  location   String
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  orisa      Orisa    @relation(fields: [orisaId], references: [id])
   orisaId    Int
-  orisa      Orisa  @relation(fields: [orisaId], references: [id])
+  createdAt  DateTime @default(now())
 }

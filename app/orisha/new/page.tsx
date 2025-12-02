@@ -1,16 +1,15 @@
 "use client";
 
+import { useToast } from "@/hooks/useToast";
 import { useState } from "react";
 
 export default function NewOrisaPage() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-
+  const { success: SuccessToast, error: ErrToast } = useToast();
   async function submitOrisa() {
-    if (!name) return setMessage("Orisa name is required");
+    if (!name) return ErrToast("Orisa name is required");
     setLoading(true);
-    setMessage("");
 
     try {
       const res = await fetch("/api/orisha", {
@@ -21,10 +20,10 @@ export default function NewOrisaPage() {
 
       if (!res.ok) throw new Error("Failed to create Orisa");
       const data = await res.json();
-      setMessage(`Orisa "${data.name}" created!`);
+      SuccessToast(`Orisa "${data.name}" created!`);
       setName("");
     } catch (err: any) {
-      setMessage(err.message);
+      ErrToast(err.message);
     } finally {
       setLoading(false);
     }
@@ -46,7 +45,6 @@ export default function NewOrisaPage() {
       >
         {loading ? "Creating..." : "Create"}
       </button>
-      {message && <p>{message}</p>}
     </section>
   );
 }
