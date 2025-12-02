@@ -3,7 +3,6 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GithubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
 import TwitterProvider from "next-auth/providers/twitter";
-
 import { prisma } from "@/utils/prisma-client";
 import bcrypt from "bcrypt";
 
@@ -34,18 +33,13 @@ export const authOptions: NextAuthOptions = {
 
         const isValid = await bcrypt.compare(
           credentials.password,
-          user.password
+          user.password!
         );
         if (!isValid) return null;
 
         const roles: string[] = user.roles?.map((ur) => ur.role.name) ?? [];
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          roles,
-        };
+        return { id: user.id, email: user.email, name: user.name, roles };
       },
     }),
 
@@ -67,15 +61,46 @@ export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
 
   callbacks: {
-    jwt: async ({ token, user }) => {
+    jwt: async ({ token, user, account }) => {
       if (user) {
-        const authUser = user as AuthUser;
-        token.sub = authUser.id;
-        token.roles = authUser.roles;
+        let roles: string[] = [];
+
+        // Credentials login
+        if ("roles" in user && Array.isArray(user.roles)) {
+          roles = user.roles;
+          token.sub = user.id;
+        }
+        // OAuth login
+        else if (user.email) {
+          // Look for existing user
+          let dbUser = await prisma.user.findUnique({
+            where: { email: user.email },
+            include: { roles: { include: { role: true } } },
+          });
+
+          if (!dbUser) {
+            // Create new OAuth user
+            dbUser = await prisma.user.create({
+              data: {
+                email: user.email,
+                name: user.name,
+                password: null, 
+                roles: {
+                  create: [{ role: { connect: { name: "USER" } } }],
+                },
+              },
+              include: { roles: { include: { role: true } } },
+            });
+          }
+
+          roles = dbUser.roles.map((ur) => ur.role.name);
+          token.sub = dbUser.id;
+        }
+
+        token.roles = roles;
       }
       return token;
     },
-
     session: async ({ session, token }) => {
       session.user = {
         ...session.user,
@@ -90,6 +115,6 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
 };
 
-// export default NextAuth(authOptions);
+export default NextAuth(authOptions);
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authOptions);
