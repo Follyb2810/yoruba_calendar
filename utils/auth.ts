@@ -7,7 +7,6 @@ import TwitterProvider from "next-auth/providers/twitter";
 import { prisma } from "@/utils/prisma-client";
 import bcrypt from "bcrypt";
 
-// Strongly typed user object for Credentials provider
 interface AuthUser {
   id: string;
   email: string;
@@ -17,7 +16,6 @@ interface AuthUser {
 
 export const authOptions: NextAuthOptions = {
   providers: [
-    // ACTIVE: Credentials login
     CredentialsProvider({
       name: "Credentials",
       credentials: {
@@ -40,7 +38,7 @@ export const authOptions: NextAuthOptions = {
         );
         if (!isValid) return null;
 
-        const roles = user.roles?.map((ur) => ur.role.name) ?? [];
+        const roles: string[] = user.roles?.map((ur) => ur.role.name) ?? [];
 
         return {
           id: user.id,
@@ -66,15 +64,14 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
 
-  session: {
-    strategy: "jwt",
-  },
+  session: { strategy: "jwt" },
 
   callbacks: {
     jwt: async ({ token, user }) => {
       if (user) {
-        token.sub = (user as AuthUser).id;
-        token.roles = (user as AuthUser).roles;
+        const authUser = user as AuthUser;
+        token.sub = authUser.id;
+        token.roles = authUser.roles;
       }
       return token;
     },
@@ -83,18 +80,16 @@ export const authOptions: NextAuthOptions = {
       session.user = {
         ...session.user,
         id: token.sub!,
-        roles: token.roles ?? [],
+        roles: Array.isArray(token.roles) ? token.roles : [],
       };
       return session;
     },
   },
 
-  pages: {
-    signIn: "/auth/signin",
-  },
-
+  pages: { signIn: "/auth/signin" },
   secret: process.env.NEXTAUTH_SECRET,
 };
 
 // export default NextAuth(authOptions);
+
 export const { handlers, auth, signIn, signOut } = NextAuth(authOptions);
