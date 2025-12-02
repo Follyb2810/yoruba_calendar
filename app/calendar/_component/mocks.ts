@@ -156,4 +156,3 @@ export const FESTIVALS: IFestive[] = [
     end: { m: 12, d: 15 },
   },
 ];
-

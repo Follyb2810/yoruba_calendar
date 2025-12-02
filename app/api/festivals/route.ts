@@ -1,4 +1,5 @@
 import { prisma } from "@/utils/prisma-client";
+import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 //  const session = await requireRole(["USER", "VERIFIED", "ADMIN"]);
@@ -28,7 +29,14 @@ export async function GET(req: NextRequest) {
 // POST /api/festivals
 export async function POST(req: NextRequest) {
   const data = await req.json();
+  const session = await getServerSession();
 
+  // if (!session?.user?.id) {
+  //   return NextResponse.json(
+  //     { error: "You must be logged in to create a festival" },
+  //     { status: 401 }
+  //   );
+  // }
   // Convert to Date objects
   const startDate = new Date(
     data.startYear,
@@ -46,7 +54,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const festival = await prisma.festival.create({ data });
+    const festival = await prisma.festival.create({
+      data: {
+        ...data,
+        // userId: session.user.id,
+      },
+    });
     return NextResponse.json({ festival }, { status: 201 });
   } catch (error) {
     console.error(error);

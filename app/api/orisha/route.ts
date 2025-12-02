@@ -29,14 +29,14 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name } = body;
+    const { name, userId } = body;
 
     if (!name) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
 
     const orisa = await prisma.orisa.create({
-      data: { name },
+      data: { name, userId },
     });
 
     return NextResponse.json(orisa);
