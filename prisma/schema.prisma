@@ -8,15 +8,23 @@ datasource db {
 }
 
 model User {
-  id        String     @id @default(cuid())
-  name      String?
-  email     String     @unique
-  password  String?
-  roles     UserRole[]
-  festivals Festival[]
-  orisas    Orisa[]
-  createdAt DateTime   @default(now())
-  accounts  Account[]
+  id               String     @id @default(cuid())
+  name             String?
+  email            String     @unique
+  password         String?
+  roles            UserRole[]
+  festivals        Festival[]
+  orisas           Orisa[]
+  createdAt        DateTime   @default(now())
+  // accounts  Account[]
+  twoFactorEnabled Boolean    @default(false)
+  Session          Session[]
+  Account          Account[]
+  emailVerified    Boolean    @default(false)
+  image            String?
+
+  // @@unique([email])
+  @@map("user")
 }
 
 model Role {
@@ -26,11 +34,13 @@ model Role {
 }
 
 model UserRole {
-  id     String @id @default(cuid())
-  user   User   @relation(fields: [userId], references: [id])
-  userId String
-  role   Role   @relation(fields: [roleId], references: [id])
-  roleId String
+  id       String    @id @default(cuid())
+  user     User      @relation(fields: [userId], references: [id])
+  userId   String
+  role     Role      @relation(fields: [roleId], references: [id])
+  roleId   String
+  sessions Session[]
+  accounts Account[]
 
   @@unique([userId, roleId])
 }
@@ -60,21 +70,71 @@ model Festival {
   createdAt  DateTime @default(now())
 }
 
+// model Account {
+//   id                Int     @id @default(autoincrement())
+//   userId            String
+//   type              String
+//   provider          String
+//   providerAccountId String
+//   refresh_token     String?
+//   access_token      String?
+//   expires_at        Int?
+//   token_type        String?
+//   scope             String?
+//   id_token          String?
+//   session_state     String?
+
+//   user User @relation(fields: [userId], references: [id])
+
+//   @@unique([provider, providerAccountId])
+// }
+
+model Session {
+  id         String    @id @default(cuid())
+  expiresAt  DateTime
+  token      String    @unique
+  ipAddress  String?
+  userAgent  String?
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  userRole   UserRole? @relation(fields: [userRoleId], references: [id])
+  userRoleId String?
+
+  @@map("session")
+}
+
 model Account {
-  id                Int     @id @default(autoincrement())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
+  id           String    @id @default(cuid())
+  accountId    String
+  providerId   String
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken  String?
+  refreshToken String?
+  idToken      String?
+  expiresAt    DateTime?
+  password     String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  user User @relation(fields: [userId], references: [id])
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  userRole              UserRole? @relation(fields: [userRoleId], references: [id])
+  userRoleId            String?
 
-  @@unique([provider, providerAccountId])
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  @@map("verification")
 }
