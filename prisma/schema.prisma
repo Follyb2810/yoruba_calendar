@@ -43,6 +43,7 @@ model UserRole {
   accounts Account[]
 
   @@unique([userId, roleId])
+  @@map("user_roles")
 }
 
 model Orisa {

@@ -1,48 +1,68 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/utils/auth";
+import { auth } from "./utils/auth";
 
-export const ProtectedRoutes = ["/user_info", "/dashboard", "/profile"];
-
-export const config = {
-  matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|auth|login|signin).*)",
-  ],
-};
-
-export default async function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
+  const session = await auth.api.getSession({ headers: request.headers });
   const { pathname } = request.nextUrl;
 
-  // Check if the path is protected
-  const isProtected = ProtectedRoutes.some((route) =>
+  const isProtected = ["/user_info", "/dashboard"].some((route) =>
     pathname.startsWith(route)
   );
 
-  if (isProtected) {
-    try {
-      const session = await auth();
-
-      if (!session) {
-        // Redirect to signin page if not authenticated
-        const signInUrl = new URL("/auth/signin", request.url);
-        signInUrl.searchParams.set("callbackUrl", pathname);
-        return NextResponse.redirect(signInUrl);
-      }
-
-      // Optional: Check user roles for specific routes
-      const userRoles = session.user?.roles || [];
-
-      // Example: Check for admin role on admin routes
-      if (pathname.startsWith("/admin") && !userRoles.includes("ADMIN")) {
-        return NextResponse.redirect(new URL("/unauthorized", request.url));
-      }
-    } catch (error) {
-      console.error("Middleware auth error:", error);
-      return NextResponse.redirect(new URL("/auth/signin", request.url));
-    }
+  if (isProtected && !session) {
+    const signInUrl = new URL("/auth/signin", request.url);
+    signInUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(signInUrl);
   }
-
   return NextResponse.next();
 }
+
+
+// import { NextRequest, NextResponse } from "next/server";
+// import { auth } from "@/utils/auth";
+
+// export const ProtectedRoutes = ["/user_info", "/dashboard", "/profile"];
+
+// export const config = {
+//   matcher: [
+//     "/((?!api|_next/static|_next/image|favicon.ico|auth|login|signin).*)",
+//   ],
+// };
+
+// export default async function middleware(request: NextRequest) {
+//   const { pathname } = request.nextUrl;
+
+//   // Check if the path is protected
+//   const isProtected = ProtectedRoutes.some((route) =>
+//     pathname.startsWith(route)
+//   );
+
+//   if (isProtected) {
+//     try {
+//       const session = await auth();
+
+//       if (!session) {
+//         // Redirect to signin page if not authenticated
+//         const signInUrl = new URL("/auth/signin", request.url);
+//         signInUrl.searchParams.set("callbackUrl", pathname);
+//         return NextResponse.redirect(signInUrl);
+//       }
+
+//       // Optional: Check user roles for specific routes
+//       const userRoles = session.user?.roles || [];
+
+//       // Example: Check for admin role on admin routes
+//       if (pathname.startsWith("/admin") && !userRoles.includes("ADMIN")) {
+//         return NextResponse.redirect(new URL("/unauthorized", request.url));
+//       }
+//     } catch (error) {
+//       console.error("Middleware auth error:", error);
+//       return NextResponse.redirect(new URL("/auth/signin", request.url));
+//     }
+//   }
+
+//   return NextResponse.next();
+// }
 
 // import { NextRequest, NextResponse } from "next/server";
 // import { auth } from "./utils/auth";
