@@ -1,3 +1,243 @@
+import NextAuth, { NextAuthResult } from "next-auth";
+// import Providers from "next-auth/providers";
+import CredentialsProvider from "next-auth/providers/credentials";
+import GithubProvider from "next-auth/providers/github";
+import GoogleProvider from "next-auth/providers/google";
+import TwitterProvider from "next-auth/providers/twitter";
+// import { PrismaAdapter } from "@next-auth/prisma-adapter";
+// import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/utils/prisma-client";
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import bcrypt from "bcrypt";
+import { use } from "react";
+
+interface AuthUser {
+  id: string;
+  email: string;
+  name?: string | null;
+  roles: string[];
+}
+// interface AuthUser {
+//   id: string;
+//   email: string;
+//   name?: string | null;
+//   roles: string[];
+// }
+export const { auth, handlers, signIn, signOut }: NextAuthResult = NextAuth({
+  providers: [
+    CredentialsProvider({
+      name: "Credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "passwprd" },
+      },
+      async authorize(credentials, request): Promise<AuthUser | null> {
+        const { email, password } = credentials;
+        if (!email || !password) return null;
+        const user = await prisma.user.findUnique({
+          where: { email: String(email) },
+          include: { roles: { include: { role: true } } },
+        });
+        if (!user || !user.password) return null;
+        const isValid = await bcrypt.compare(String(password), user.password);
+        if (!isValid) return null;
+        const roles = user.roles.map((ur) => ur.role.name) ?? [];
+        return { id: user.id, email: user.email, name: user.name, roles };
+      },
+    }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    }),
+    GithubProvider({
+      clientId: process.env.GITHUB_ID || "",
+      clientSecret: process.env.GITHUB_SECRET || "",
+    }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_ID || "",
+      clientSecret: process.env.GOOGLE_SECRET || "",
+    }),
+    TwitterProvider({
+      clientId: process.env.TWITTER_ID || "",
+      clientSecret: process.env.TWITTER_SECRET || "",
+      // version: "2.0",
+    }),
+  ],
+  // adapter: PrismaAdapter(prisma),
+  session: {
+    strategy: "jwt",
+  },
+  callbacks: {
+    jwt: async ({ token, user, account }) => {
+      if (user) {
+        const { id, roles, email, name } = user;
+        let user_roles: string[] = [];
+        if ("roles" in user && Array.isArray(roles)) {
+          user_roles = roles;
+          token.sub = id;
+        } else {
+          let dbUser = await prisma.user.findUnique({
+            where: { email: user.email! },
+            include: { roles: { include: { role: true } } },
+          });
+          if (!dbUser) {
+            dbUser = await prisma.user.create({
+              data: {
+                email: email!,
+                name,
+                password: null,
+                roles: {
+                  create: [
+                    {
+                      role: { connect: { name: "USER" } },
+                    },
+                  ],
+                },
+              },
+              include: { roles: { include: { role: true } } },
+            });
+            user_roles = dbUser.roles.map((ur) => ur.role.name);
+            token.sub = dbUser.id;
+          }
+          token.roles = user_roles;
+        }
+      }
+      return token;
+    },
+    session: async ({ session, token }) => {
+      if (session.user) {
+        session.user = {
+          ...session.user,
+          id: token.sub!,
+          roles: Array.isArray(token.roles) ? token.roles : [],
+        };
+      }
+      return session;
+    },
+  },
+  pages: {
+    signIn: "/auth/signin",
+  },
+  adapter: PrismaAdapter(prisma),
+});
+// import NextAuth from "next-auth";
+// import CredentialsProvider from "next-auth/providers/credentials";
+// import GithubProvider from "next-auth/providers/github";
+// import GoogleProvider from "next-auth/providers/google";
+// import TwitterProvider from "next-auth/providers/twitter";
+// import { prisma } from "@/utils/prisma-client";
+// import bcrypt from "bcrypt";
+
+// export const authOptions = {
+//   providers: [
+// CredentialsProvider({
+//   name: "Credentials",
+//   credentials: {
+//     email: { label: "Email", type: "email" },
+//     password: { label: "Password", type: "password" },
+//   },
+//   async authorize(credentials): Promise<AuthUser | null> {
+//     if (!credentials?.email || !credentials?.password) return null;
+
+//     const user = await prisma.user.findUnique({
+//       where: { email: credentials.email },
+//       include: { roles: { include: { role: true } } },
+//     });
+
+//     if (!user || !user.password) return null;
+
+//     const isValid = await bcrypt.compare(
+//       credentials.password,
+//       user.password
+//     );
+//     if (!isValid) return null;
+
+//     const roles = user.roles?.map((ur) => ur.role.name) ?? [];
+
+//     return { id: user.id, email: user.email, name: user.name, roles };
+//   },
+// }),
+
+// GithubProvider({
+//   clientId: process.env.GITHUB_ID || "",
+//   clientSecret: process.env.GITHUB_SECRET || "",
+// }),
+// GoogleProvider({
+//   clientId: process.env.GOOGLE_ID || "",
+//   clientSecret: process.env.GOOGLE_SECRET || "",
+// }),
+// TwitterProvider({
+//   clientId: process.env.TWITTER_ID || "",
+//   clientSecret: process.env.TWITTER_SECRET || "",
+//   version: "2.0",
+// }),
+//   ],
+
+//   session: {
+//     strategy: "jwt",
+//   },
+
+//   callbacks: {
+//     jwt: async ({ token, user, account }) => {
+//       if (user) {
+//         let roles: string[] = [];
+
+//         if ("roles" in user && Array.isArray(user.roles)) {
+//           roles = user.roles;
+//           token.sub = user.id;
+//         } else if (user.email) {
+//           let dbUser = await prisma.user.findUnique({
+//             where: { email: user.email },
+//             include: { roles: { include: { role: true } } },
+//           });
+
+//           if (!dbUser) {
+//             dbUser = await prisma.user.create({
+//               data: {
+//                 email: user.email,
+//                 name: user.name ?? null,
+//                 password: null,
+//                 roles: {
+//                   create: [{ role: { connect: { name: "USER" } } }],
+//                 },
+//               },
+//               include: { roles: { include: { role: true } } },
+//             });
+//           }
+
+//           roles = dbUser.roles.map((ur) => ur.role.name);
+//           token.sub = dbUser.id;
+//         }
+
+//         token.roles = roles;
+//       }
+
+//       return token;
+//     },
+
+//     session: async ({ session, token }) => {
+//       if (session.user) {
+//         session.user = {
+//           ...session.user,
+//           id: token.sub!,
+//           roles: Array.isArray(token.roles) ? token.roles : [],
+//         };
+//       }
+//       return session;
+//     },
+//   },
+
+//   pages: {
+//     signIn: "/auth/signin",
+//   },
+
+//   secret: process.env.NEXTAUTH_SECRET,
+// } satisfies import("next-auth").NextAuthOptions;
+
+// const { handlers, auth, signIn, signOut } = NextAuth(authOptions);
+
+// export { handlers, auth, signIn, signOut };
+
 // // lib/auth.ts
 // import { betterAuth } from "better-auth";
 // import { prismaAdapter } from "better-auth/adapters/prisma";
@@ -81,7 +321,6 @@
 //     }),
 //   ],
 // });
-
 
 //! work but just one to one
 
@@ -432,128 +671,3 @@
 //     },
 //   },
 // });
-
-// import NextAuth from "next-auth";
-// import CredentialsProvider from "next-auth/providers/credentials";
-// import GithubProvider from "next-auth/providers/github";
-// import GoogleProvider from "next-auth/providers/google";
-// import TwitterProvider from "next-auth/providers/twitter";
-// import { prisma } from "@/utils/prisma-client";
-// import bcrypt from "bcrypt";
-
-// interface AuthUser {
-//   id: string;
-//   email: string;
-//   name?: string | null;
-//   roles: string[];
-// }
-
-// export const authOptions = {
-//   providers: [
-//     CredentialsProvider({
-//       name: "Credentials",
-//       credentials: {
-//         email: { label: "Email", type: "email" },
-//         password: { label: "Password", type: "password" },
-//       },
-//       async authorize(credentials): Promise<AuthUser | null> {
-//         if (!credentials?.email || !credentials?.password) return null;
-
-//         const user = await prisma.user.findUnique({
-//           where: { email: credentials.email },
-//           include: { roles: { include: { role: true } } },
-//         });
-
-//         if (!user || !user.password) return null;
-
-//         const isValid = await bcrypt.compare(
-//           credentials.password,
-//           user.password
-//         );
-//         if (!isValid) return null;
-
-//         const roles = user.roles?.map((ur) => ur.role.name) ?? [];
-
-//         return { id: user.id, email: user.email, name: user.name, roles };
-//       },
-//     }),
-
-//     GithubProvider({
-//       clientId: process.env.GITHUB_ID || "",
-//       clientSecret: process.env.GITHUB_SECRET || "",
-//     }),
-//     GoogleProvider({
-//       clientId: process.env.GOOGLE_ID || "",
-//       clientSecret: process.env.GOOGLE_SECRET || "",
-//     }),
-//     TwitterProvider({
-//       clientId: process.env.TWITTER_ID || "",
-//       clientSecret: process.env.TWITTER_SECRET || "",
-//       version: "2.0",
-//     }),
-//   ],
-
-//   session: {
-//     strategy: "jwt",
-//   },
-
-//   callbacks: {
-//     jwt: async ({ token, user, account }) => {
-//       if (user) {
-//         let roles: string[] = [];
-
-//         if ("roles" in user && Array.isArray(user.roles)) {
-//           roles = user.roles;
-//           token.sub = user.id;
-//         } else if (user.email) {
-//           let dbUser = await prisma.user.findUnique({
-//             where: { email: user.email },
-//             include: { roles: { include: { role: true } } },
-//           });
-
-//           if (!dbUser) {
-//             dbUser = await prisma.user.create({
-//               data: {
-//                 email: user.email,
-//                 name: user.name ?? null,
-//                 password: null,
-//                 roles: {
-//                   create: [{ role: { connect: { name: "USER" } } }],
-//                 },
-//               },
-//               include: { roles: { include: { role: true } } },
-//             });
-//           }
-
-//           roles = dbUser.roles.map((ur) => ur.role.name);
-//           token.sub = dbUser.id;
-//         }
-
-//         token.roles = roles;
-//       }
-
-//       return token;
-//     },
-
-//     session: async ({ session, token }) => {
-//       if (session.user) {
-//         session.user = {
-//           ...session.user,
-//           id: token.sub!,
-//           roles: Array.isArray(token.roles) ? token.roles : [],
-//         };
-//       }
-//       return session;
-//     },
-//   },
-
-//   pages: {
-//     signIn: "/auth/signin",
-//   },
-
-//   secret: process.env.NEXTAUTH_SECRET,
-// } satisfies import("next-auth").NextAuthOptions;
-
-// const { handlers, auth, signIn, signOut } = NextAuth(authOptions);
-
-// export { handlers, auth, signIn, signOut };
