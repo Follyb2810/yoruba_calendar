@@ -1,8 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { getServerSession } from "next-auth/next";
 import { prisma } from "@/utils/prisma-client";
 import bcrypt from "bcrypt";
-import { authOptions } from "@/utils/auth";
+import { auth } from "@/utils/auth";
 
 interface UpdatePasswordBody {
   currentPassword?: string;
@@ -17,7 +16,7 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const session = await getServerSession(req, res, authOptions);
+  const session = await auth();
 
   if (!session || !session.user?.id) {
     return res.status(401).json({ error: "Unauthorized" });

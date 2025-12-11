@@ -5,6 +5,7 @@ import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
 import { Toaster } from "sonner";
 import { home_metadata } from "@/metadata/home_metadata";
+import { SessionProvider } from "next-auth/react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,10 +28,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Navbar />
-        {children}
-        <Toaster />
-        <Footer />
+        <SessionProvider refetchInterval={60}>
+          <Navbar />
+          {children}
+          <Toaster />
+          <Footer />
+        </SessionProvider>
       </body>
     </html>
   );
