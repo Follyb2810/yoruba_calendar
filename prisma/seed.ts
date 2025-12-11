@@ -1,5 +1,6 @@
 import { prisma } from "../utils/prisma-client";
 // import { ORISAS, FESTIVALS } from "./seed-data";
+import bcrypt from "bcrypt";
 
 const ORISAS = [
   { name: "Olokun" },
@@ -86,6 +87,27 @@ const FESTIVALS = [
 ];
 
 async function main() {
+  const roles = ["USER", "ADMIN"];
+  for (const name of roles) {
+    await prisma.role.upsert({ where: { name }, update: {}, create: { name } });
+  }
+
+  const adminEmail = process.env.ADMIN_EMAIL ?? "admin@example.com";
+  const adminPassword = process.env.ADMIN_PASSWORD ?? "changeme";
+
+  const hashed = await bcrypt.hash(adminPassword, 10);
+
+  let admin = await prisma.user.findUnique({ where: { email: adminEmail } });
+  if (!admin) {
+    admin = await prisma.user.create({
+      data: {
+        email: adminEmail,
+        name: "Administrator",
+        password: hashed,
+        roles: { create: [{ role: { connect: { name: "ADMIN" } } }] },
+      },
+    });
+  }
   // Create Orisas
   const createdOrisas = await Promise.all(
     ORISAS.map((o) => prisma.orisa.create({ data: o }))
@@ -98,6 +120,8 @@ async function main() {
   for (const f of FESTIVALS) {
     await prisma.festival.create({
       data: {
+        location: "",
+        userId: admin.id,
         endYear: f.endDay,
         startYear: f.startDay,
         title: f.title,

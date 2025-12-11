@@ -1,22 +1,52 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "./utils/auth";
+import { getToken } from "next-auth/jwt";
 
 export async function middleware(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: request.headers });
-  const { pathname } = request.nextUrl;
+  const url = request.nextUrl.clone();
+  console.log({ request });
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
 
-  const isProtected = ["/user_info", "/dashboard"].some((route) =>
-    pathname.startsWith(route)
-  );
-
-  if (isProtected && !session) {
-    const signInUrl = new URL("/auth/signin", request.url);
-    signInUrl.searchParams.set("callbackUrl", pathname);
-    return NextResponse.redirect(signInUrl);
+  // protect /admin path
+  if (url.pathname.startsWith("/admin")) {
+    if (
+      !token ||
+      !Array.isArray(token.roles) ||
+      !token.roles.includes("ADMIN")
+    ) {
+      url.pathname = "/auth/signin";
+      return NextResponse.redirect(url);
+    }
   }
+
+  // protect /dashboard path for logged in users
+  if (url.pathname.startsWith("/dashboard")) {
+    if (!token) {
+      url.pathname = "/auth/signin";
+      return NextResponse.redirect(url);
+    }
+  }
+
   return NextResponse.next();
+  // const session = await auth.api.getSession({ headers: request.headers });
+  // const { pathname } = request.nextUrl;
+
+  // const isProtected = ["/user_info", "/dashboard"].some((route) =>
+  //   pathname.startsWith(route)
+  // );
+
+  // if (isProtected && !session) {
+  //   const signInUrl = new URL("/auth/signin", request.url);
+  //   signInUrl.searchParams.set("callbackUrl", pathname);
+  //   return NextResponse.redirect(signInUrl);
+  // }
+  // return NextResponse.next();
 }
 
+export const config = { matcher: ["/admin/:path*", "/dashboard/:path*"] };
 
 // import { NextRequest, NextResponse } from "next/server";
 // import { auth } from "@/utils/auth";
