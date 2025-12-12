@@ -1,11 +1,16 @@
-export function hasRole(token: any, role: string) {
-  if (!token) return false;
-  const roles = token.roles || [];
-  return roles.includes(role);
+export function hasRole(
+  user: { roles: string[] } | undefined,
+  role: string
+): boolean {
+  if (!user) return false;
+  return Array.isArray(user.roles) && user.roles.includes(role);
 }
 
-export function hasAnyRole(token: any, rolesToCheck: string[]) {
-  if (!token) return false;
-  const roles = token.roles || [];
-  return rolesToCheck.some((r) => roles.includes(r));
+export function hasAnyRole(
+  user: { roles: string[] } | undefined,
+  rolesToCheck: string[]
+): boolean {
+  if (!user) return false;
+  const userRoles = Array.isArray(user.roles) ? user.roles : [];
+  return rolesToCheck.some((r) => userRoles.includes(r));
 }

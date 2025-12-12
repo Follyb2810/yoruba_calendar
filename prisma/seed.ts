@@ -1,7 +1,7 @@
 import { prisma } from "../utils/prisma-client";
-// import { ORISAS, FESTIVALS } from "./seed-data";
 import bcrypt from "bcrypt";
 
+console.log("seeing beging");
 const ORISAS = [
   { name: "Olokun" },
   { name: "Oshun" },
@@ -85,11 +85,16 @@ const FESTIVALS = [
     orisaName: "Elegba",
   },
 ];
+console.log("seeing beging_1");
+const ALL_ROLES = ["USER", "CREATOR", "MODERATOR", "ADMIN", "SUPERADMIN"];
 
 async function main() {
-  const roles = ["USER", "ADMIN"];
-  for (const name of roles) {
-    await prisma.role.upsert({ where: { name }, update: {}, create: { name } });
+  for (const name of ALL_ROLES) {
+    await prisma.role.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
   }
 
   const adminEmail = process.env.ADMIN_EMAIL ?? "admin@example.com";
@@ -98,48 +103,64 @@ async function main() {
   const hashed = await bcrypt.hash(adminPassword, 10);
 
   let admin = await prisma.user.findUnique({ where: { email: adminEmail } });
+
   if (!admin) {
     admin = await prisma.user.create({
       data: {
         email: adminEmail,
         name: "Administrator",
         password: hashed,
-        roles: { create: [{ role: { connect: { name: "ADMIN" } } }] },
+        roles: {
+          create: ALL_ROLES.map((role) => ({
+            role: { connect: { name: role } },
+          })),
+        },
       },
     });
   }
-  // Create Orisas
-  const createdOrisas = await Promise.all(
-    ORISAS.map((o) => prisma.orisa.create({ data: o }))
-  );
 
-  const getOrisaId = (name: string) =>
-    createdOrisas.find((o) => o.name === name)?.id!;
+  const orisaMap: Record<string, number> = {};
 
-  // Create Festivals
+  for (const ori of ORISAS) {
+    const orisa = await prisma.orisa.upsert({
+      where: { name: ori.name },
+      update: {},
+      create: { name: ori.name },
+    });
+
+    orisaMap[ori.name] = orisa.id;
+  }
+
+  const currentYear = new Date().getFullYear();
+
   for (const f of FESTIVALS) {
+    const orisaId = orisaMap[f.orisaName];
+    if (!orisaId) continue;
+
     await prisma.festival.create({
       data: {
+        title: f.title,
         location: "",
         userId: admin.id,
-        endYear: f.endDay,
-        startYear: f.startDay,
-        title: f.title,
+        orisaId,
+
+        startYear: currentYear,
+        endYear: currentYear,
+
         startMonth: f.startMonth,
         startDay: f.startDay,
         endMonth: f.endMonth,
         endDay: f.endDay,
-        orisaId: getOrisaId(f.orisaName),
       },
     });
   }
 
-  console.log("Seeding completed!");
+  console.log("Seeding completed! Admin has all roles.");
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    console.error("Seed error:", e);
     process.exit(1);
   })
   .finally(async () => {

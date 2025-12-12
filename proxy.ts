@@ -1,51 +1,61 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "./utils/auth";
 import { getToken } from "next-auth/jwt";
 
-export async function middleware(request: NextRequest) {
+/**
+ * Middleware to protect routes based on authentication and roles
+ */
+export async function proxy(request: NextRequest) {
   const url = request.nextUrl.clone();
-  console.log({ request });
+
+  // Get the JWT token from the request
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
   });
 
-  // protect /admin path
+  // -----------------------------
+  // 1️⃣ Protect /admin routes
+  // -----------------------------
   if (url.pathname.startsWith("/admin")) {
     if (
       !token ||
       !Array.isArray(token.roles) ||
       !token.roles.includes("ADMIN")
     ) {
-      url.pathname = "/auth/signin";
+      url.pathname = "/signin";
       return NextResponse.redirect(url);
     }
   }
 
-  // protect /dashboard path for logged in users
+  // -----------------------------
+  // 2️⃣ Protect /dashboard routes (any logged-in user)
+  // -----------------------------
   if (url.pathname.startsWith("/dashboard")) {
     if (!token) {
-      url.pathname = "/auth/signin";
+      url.pathname = "/signin";
       return NextResponse.redirect(url);
     }
   }
 
+  // -----------------------------
+  // 3️⃣ All other routes are public
+  // -----------------------------
   return NextResponse.next();
-  // const session = await auth.api.getSession({ headers: request.headers });
-  // const { pathname } = request.nextUrl;
-
-  // const isProtected = ["/user_info", "/dashboard"].some((route) =>
-  //   pathname.startsWith(route)
-  // );
-
-  // if (isProtected && !session) {
-  //   const signInUrl = new URL("/auth/signin", request.url);
-  //   signInUrl.searchParams.set("callbackUrl", pathname);
-  //   return NextResponse.redirect(signInUrl);
-  // }
-  // return NextResponse.next();
 }
 
+// const session = await auth.api.getSession({ headers: request.headers });
+// const { pathname } = request.nextUrl;
+
+// const isProtected = ["/user_info", "/dashboard"].some((route) =>
+//   pathname.startsWith(route)
+// );
+
+// if (isProtected && !session) {
+//   const signInUrl = new URL("/auth/signin", request.url);
+//   signInUrl.searchParams.set("callbackUrl", pathname);
+//   return NextResponse.redirect(signInUrl);
+// }
+// return NextResponse.next();
 export const config = { matcher: ["/admin/:path*", "/dashboard/:path*"] };
 
 // import { NextRequest, NextResponse } from "next/server";

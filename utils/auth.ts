@@ -40,8 +40,12 @@ export const { auth, handlers, signIn, signOut }: NextAuthResult = NextAuth({
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
+        email: {
+          label: "Email",
+          type: "email",
+          placeholder: "follyb@gmail.com",
+        },
+        password: { label: "Password", type: "password", placeholder: "*****" },
       },
       async authorize(credentials): Promise<AuthUser | null> {
         const { email, password } = credentials || {};

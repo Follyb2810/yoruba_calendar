@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../generated/prisma"
 }
 
@@ -7,47 +7,54 @@ datasource db {
   provider = "sqlite"
 }
 
-model User {
-  id               String     @id @default(cuid())
-  name             String?
-  email            String     @unique
-  password         String?
-  roles            UserRole[]
-  festivals        Festival[]
-  orisas           Orisa[]
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
-  // accounts  Account[]
-  twoFactorEnabled Boolean    @default(false)
-  // Session          Session[]
-  // Account          Account[]
-  accounts         Account[]
-  sessions         Session[]
-  emailVerified    Boolean    @default(false)
-  image            String?
+///////////////////////////////////////////////////////
+// USER + ROLES
+///////////////////////////////////////////////////////
 
-  // @@unique([email])
+model User {
+  id               String    @id @default(cuid())
+  name             String?
+  email            String    @unique
+  emailVerified    DateTime?
+  password         String?
+  image            String?
+  twoFactorEnabled Boolean   @default(false)
+
+  roles     UserRole[]
+  festivals Festival[]
+  orisas    Orisa[]
+
+  accounts Account[]
+  sessions Session[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@map("user")
 }
 
 model Role {
   id    String     @id @default(cuid())
-  name  String     @unique
+  name  String     @unique @default("USER") // USER, CREATOR, MODERATOR, ADMIN, SUPERADMIN
   users UserRole[]
 }
 
 model UserRole {
-  id       String    @id @default(cuid())
-  user     User      @relation(fields: [userId], references: [id])
-  userId   String
-  role     Role      @relation(fields: [roleId], references: [id])
-  roleId   String
-  sessions Session[]
-  accounts Account[]
+  id String @id @default(cuid())
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  role   Role   @relation(fields: [roleId], references: [id])
+  roleId String
 
   @@unique([userId, roleId])
   @@map("user_roles")
 }
+
+///////////////////////////////////////////////////////
+// EVENT / FESTIVAL SYSTEM
+///////////////////////////////////////////////////////
 
 model Orisa {
   id        Int        @id @default(autoincrement())
@@ -58,7 +65,7 @@ model Orisa {
 }
 
 model Festival {
-  id         Int      @id @default(autoincrement())
+  id         Int    @id @default(autoincrement())
   title      String
   startYear  Int
   startMonth Int
@@ -67,120 +74,56 @@ model Festival {
   endMonth   Int
   endDay     Int
   location   String
-  user       User     @relation(fields: [userId], references: [id])
-  userId     String
-  orisa      Orisa    @relation(fields: [orisaId], references: [id])
-  orisaId    Int
-  createdAt  DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  orisa   Orisa @relation(fields: [orisaId], references: [id])
+  orisaId Int
+
+  createdAt DateTime @default(now())
 }
 
-// model Account {
-//   id                Int     @id @default(autoincrement())
-//   userId            String
-//   type              String
-//   provider          String
-//   providerAccountId String
-//   refresh_token     String?
-//   access_token      String?
-//   expires_at        Int?
-//   token_type        String?
-//   scope             String?
-//   id_token          String?
-//   session_state     String?
-
-//   user User @relation(fields: [userId], references: [id])
-
-//   @@unique([provider, providerAccountId])
-// }
-
-// model Session {
-//   id         String    @id @default(cuid())
-//   expiresAt  DateTime
-//   token      String    @unique
-//   ipAddress  String?
-//   userAgent  String?
-//   userId     String
-//   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-//   createdAt  DateTime  @default(now())
-//   updatedAt  DateTime  @updatedAt
-//   userRole   UserRole? @relation(fields: [userRoleId], references: [id])
-//   userRoleId String?
-
-//   @@map("session")
-// }
-
-// model Account {
-//   id           String    @id @default(cuid())
-//   accountId    String
-//   providerId   String
-//   userId       String
-//   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-//   accessToken  String?
-//   refreshToken String?
-//   idToken      String?
-//   expiresAt    DateTime?
-//   password     String?
-//   createdAt    DateTime  @default(now())
-//   updatedAt    DateTime  @updatedAt
-
-//   accessTokenExpiresAt  DateTime?
-//   refreshTokenExpiresAt DateTime?
-//   scope                 String?
-//   userRole              UserRole? @relation(fields: [userRoleId], references: [id])
-//   userRoleId            String?
-
-//   @@map("account")
-// }
-
-// model Verification {
-//   id         String    @id @default(cuid())
-//   identifier String
-//   value      String
-//   expiresAt  DateTime
-//   createdAt  DateTime? @default(now())
-//   updatedAt  DateTime? @updatedAt
-
-//   @@map("verification")
-// }
+///////////////////////////////////////////////////////
+// NEXTAUTH REQUIRED MODELS
+///////////////////////////////////////////////////////
 
 model Account {
-  id                 String    @id @default(cuid())
-  userId             String
-  providerType       String
-  providerId         String
-  providerAccountId  String
-  refreshToken       String?
-  accessToken        String?
-  accessTokenExpires DateTime?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  user               User      @relation(fields: [userId], references: [id])
-  userRole           UserRole? @relation(fields: [userRoleId], references: [id])
-  userRoleId         String?
+  id                String @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
 
-  @@unique([providerId, providerAccountId])
+  refresh_token String?
+  access_token  String?
+  expires_at    Int?
+  token_type    String?
+  scope         String?
+  id_token      String?
+  session_state String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
 }
 
 model Session {
-  id           String    @id @default(cuid())
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
   userId       String
   expires      DateTime
-  sessionToken String    @unique
-  accessToken  String    @unique
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  user         User      @relation(fields: [userId], references: [id])
-  userRole     UserRole? @relation(fields: [userRoleId], references: [id])
-  userRoleId   String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
-model VerificationRequest {
-  id         String   @id @default(cuid())
+model VerificationToken {
   identifier String
   token      String   @unique
   expires    DateTime
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
 
   @@unique([identifier, token])
 }
