@@ -63,6 +63,7 @@ const AuthForm: FC<AuthFormProps> = ({
         console.log({ res });
         if (res?.error) setError(res.error);
         else router.push("/dashboard");
+        console.log("last after push to dashbaord");
       }
     } catch (err: any) {
       setError(err.message);

@@ -13,3 +13,11 @@ You’ll be able to add:
 ⭐ Ads (cultural sponsors)
 
 Because you control both the API & data.
+
+```bash
+# On Linux/Mac
+openssl rand -base64 32
+
+# Or using Node
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```

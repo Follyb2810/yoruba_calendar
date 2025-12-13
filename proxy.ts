@@ -1,21 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-/**
- * Middleware to protect routes based on authentication and roles
- */
 export async function proxy(request: NextRequest) {
   const url = request.nextUrl.clone();
-
-  // Get the JWT token from the request
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
   });
-
-  // -----------------------------
-  // 1️⃣ Protect /admin routes
-  // -----------------------------
   if (url.pathname.startsWith("/admin")) {
     if (
       !token ||
@@ -26,10 +17,6 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(url);
     }
   }
-
-  // -----------------------------
-  // 2️⃣ Protect /dashboard routes (any logged-in user)
-  // -----------------------------
   if (url.pathname.startsWith("/dashboard")) {
     if (!token) {
       url.pathname = "/signin";
@@ -37,12 +24,10 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // -----------------------------
-  // 3️⃣ All other routes are public
-  // -----------------------------
   return NextResponse.next();
 }
 
+export const config = { matcher: ["/admin/:path*", "/dashboard/:path*"] };
 // const session = await auth.api.getSession({ headers: request.headers });
 // const { pathname } = request.nextUrl;
 
@@ -56,7 +41,6 @@ export async function proxy(request: NextRequest) {
 //   return NextResponse.redirect(signInUrl);
 // }
 // return NextResponse.next();
-export const config = { matcher: ["/admin/:path*", "/dashboard/:path*"] };
 
 // import { NextRequest, NextResponse } from "next/server";
 // import { auth } from "@/utils/auth";

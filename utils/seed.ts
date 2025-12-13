@@ -72,8 +72,8 @@ export async function runSeedIfEmpty() {
     });
   }
 
-  const adminEmail = process.env.ADMIN_EMAIL ?? "admin@example.com";
-  const adminPassword = process.env.ADMIN_PASSWORD ?? "changeme";
+  const adminEmail = process.env.ADMIN_EMAIL ?? "admin@dev.com";
+  const adminPassword = process.env.ADMIN_PASSWORD ?? "admin1234";
   const hashed = await bcrypt.hash(adminPassword, 10);
 
   let admin = await prisma.user.findUnique({ where: { email: adminEmail } });
@@ -84,6 +84,7 @@ export async function runSeedIfEmpty() {
         email: adminEmail,
         name: "Administrator",
         password: hashed,
+        emailVerified: new Date(),
         roles: {
           create: ALL_ROLES.map((role) => ({
             role: { connect: { name: role } },

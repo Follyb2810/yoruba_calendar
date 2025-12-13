@@ -8,7 +8,7 @@ import { hasRole } from "@/utils/rbac";
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-
+  console.log("DashboardPage");
   useEffect(() => {
     if (status === "loading") return;
     if (!session?.user) {
