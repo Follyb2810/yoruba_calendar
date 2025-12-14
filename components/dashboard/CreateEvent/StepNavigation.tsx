@@ -13,21 +13,16 @@ export default function StepNavigation({ step }: Props) {
     <div className="flex items-center justify-between mb-8">
       {steps.map((s, index) => (
         <div key={s.id} className="flex items-center w-full">
-          {/* Step Circle */}
           <div
-            className={`
-              flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium
+            className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium
               ${
                 step >= s.id
                   ? "bg-orange-500 text-white"
                   : "bg-gray-200 text-gray-500"
-              }
-            `}
+              }`}
           >
             {s.id}
           </div>
-
-          {/* Step Label */}
           <span
             className={`ml-2 text-sm ${
               step >= s.id ? "text-gray-900 font-medium" : "text-gray-400"
@@ -35,8 +30,6 @@ export default function StepNavigation({ step }: Props) {
           >
             {s.label}
           </span>
-
-          {/* Connector Line */}
           {index !== steps.length - 1 && (
             <div
               className={`flex-1 h-px mx-4 ${

@@ -1,11 +1,20 @@
-import { ZodSchema } from "zod";
+import { ZodType } from "zod";
 
 export const zodFormikValidate =
-  <T>(schema: ZodSchema<T>) =>
+  <T>(schema: ZodType<T>) =>
   (values: T) => {
     const result = schema.safeParse(values);
 
     if (result.success) return {};
-
-    return result.error.flatten().fieldErrors;
+    const fieldErrors: Record<string, string[]> = {};
+    for (const issue of result.error.issues) {
+      const path = issue.path.join(".");
+      if (!fieldErrors[path]) {
+        fieldErrors[path] = [];
+      }
+      fieldErrors[path].push(issue.message);
+    }
+    console.log({ fieldErrors_Flatten: result.error.flatten().fieldErrors });
+    console.log({ fieldErrors });
+    return fieldErrors;
   };

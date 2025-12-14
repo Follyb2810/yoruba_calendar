@@ -30,10 +30,12 @@ export type EventFormData = {
   eventType: "physical" | "virtual";
   location?: string;
   eventLink?: string;
+  endTime?: string;
+  startTime?: string;
   timezone: string;
-  dates: Date[];
-  startDate: Date | null;
-  endDate: Date | null;
+  dates: Date[] | [];
+  startDate: string;
+  endDate: string;
   image?: File;
   banner?: File;
 

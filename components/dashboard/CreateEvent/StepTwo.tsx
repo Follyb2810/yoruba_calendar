@@ -1,53 +1,150 @@
+"use client";
+
+import { Formik, Form, Field } from "formik";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { StepProps } from "./StepOne";
+import { zodFormikValidate } from "@/utils/zodFormik";
+import { stepTwoSchema } from "@/schemas/event.schema";
 
-export function StepTwo({ data, setData }: StepProps) {
+const COUNTRIES = ["Nigeria", "Ghana", "Togo", "Benin", "Other"];
+
+export function StepTwo({
+  data,
+  setData,
+  onNext,
+}: StepProps & { onNext: () => void }) {
   return (
-    <>
-      <select
-        value={data.country}
-        onChange={(e) => setData({ ...data, country: e.target.value })}
-      >
-        <option value="">Country</option>
-      </select>
+    <Formik
+      initialValues={{
+        country: data.country || "",
+        eventType: data.eventType || "physical",
+        location: data.location || "",
+        eventLink: data.eventLink || "",
+        startDate: data.startDate || "",
+        startTime: data.startTime || "",
+        endDate: data.endDate || "",
+        endTime: data.endTime || "",
+      }}
+      validate={zodFormikValidate(stepTwoSchema)}
+      validateOnMount
+      onSubmit={(values) => {
+        setData((prev) => ({ ...prev, ...values }));
+        onNext();
+      }}
+    >
+      {({ errors, touched, isValid, setFieldValue, values }) => (
+        <Form className="space-y-6">
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Country</label>
+            <Select
+              value={values.country}
+              onValueChange={(v) => setFieldValue("country", v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select country" />
+              </SelectTrigger>
+              <SelectContent>
+                {COUNTRIES.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {touched.country && errors.country && (
+              <p className="text-sm text-red-500">{errors.country}</p>
+            )}
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Event Type</label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  checked={values.eventType === "physical"}
+                  onChange={() => setFieldValue("eventType", "physical")}
+                />
+                Physical
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  checked={values.eventType === "virtual"}
+                  onChange={() => setFieldValue("eventType", "virtual")}
+                />
+                Virtual
+              </label>
+            </div>
+          </div>
+          {values.eventType === "physical" && (
+            <div className="space-y-1">
+              <Field as={Input} name="location" placeholder="Event location" />
+              {touched.location && errors.location && (
+                <p className="text-sm text-red-500">{errors.location}</p>
+              )}
+            </div>
+          )}
 
-      <div>
-        <label>
-          <input
-            type="radio"
-            checked={data.eventType === "physical"}
-            onChange={() => setData({ ...data, eventType: "physical" })}
-          />
-          Physical
-        </label>
-        <label>
-          <input
-            type="radio"
-            checked={data.eventType === "virtual"}
-            onChange={() => setData({ ...data, eventType: "virtual" })}
-          />
-          Virtual
-        </label>
-      </div>
+          {values.eventType === "virtual" && (
+            <div className="space-y-1">
+              <Field as={Input} name="eventLink" placeholder="Event link" />
+              {touched.eventLink && errors.eventLink && (
+                <p className="text-sm text-red-500">{errors.eventLink}</p>
+              )}
+            </div>
+          )}
 
-      {data.eventType === "physical" && (
-        <input
-          placeholder="Event location"
-          onChange={(e) => setData({ ...data, location: e.target.value })}
-        />
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Start</label>
+            <div className="flex gap-2">
+              <Field as={Input} type="date" name="startDate" />
+              <Field as={Input} type="time" name="startTime" />
+            </div>
+            {touched.startDate && errors.startDate && (
+              <p className="text-sm text-red-500">{errors.startDate}</p>
+            )}
+            {touched.startTime && errors.startTime && (
+              <p className="text-sm text-red-500">{errors.startTime}</p>
+            )}
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium">End</label>
+            <div className="flex gap-2">
+              <Field as={Input} type="date" name="endDate" />
+              <Field as={Input} type="time" name="endTime" />
+            </div>
+            {touched.endDate && errors.endDate && (
+              <p className="text-sm text-red-500">{errors.endDate}</p>
+            )}
+            {touched.endTime && errors.endTime && (
+              <p className="text-sm text-red-500">{errors.endTime}</p>
+            )}
+          </div>
+
+          <div className="flex justify-end pt-4">
+            <button
+              type="submit"
+              disabled={!isValid}
+              className={`px-6 py-2 rounded-md text-white transition
+                ${
+                  isValid
+                    ? "bg-orange-500 hover:bg-orange-600"
+                    : "bg-gray-300 cursor-not-allowed"
+                }`}
+            >
+              Next
+            </button>
+          </div>
+        </Form>
       )}
-
-      {data.eventType === "virtual" && (
-        <input
-          placeholder="Event link"
-          onChange={(e) => setData({ ...data, eventLink: e.target.value })}
-        />
-      )}
-
-      <input type="datetime-local" />
-      <input type="datetime-local" />
-
-      <input type="file" />
-      <input type="file" />
-    </>
+    </Formik>
   );
 }
