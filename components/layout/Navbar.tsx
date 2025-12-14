@@ -21,8 +21,9 @@ export default function Navbar() {
     <nav className="border-b bg-background sticky top-0 z-50">
       <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
         <Link href="/" className="text-xl font-bold">
-          Ọ̀rìṣàVerse
+          Kọ́jọ́dá
         </Link>
+        {/* Ọ̀rìṣàVerse */}
 
         {/* Desktop menu */}
         <div className="hidden md:flex gap-6 text-sm font-medium mx-auto">

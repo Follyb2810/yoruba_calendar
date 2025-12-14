@@ -17,6 +17,11 @@ type LinkTabsProps = {
 export function LinkTabs({ tabs, className }: LinkTabsProps) {
   const pathname = usePathname();
 
+  const baseHref = tabs.reduce(
+    (base, tab) => (tab.href.length < base.length ? tab.href : base),
+    tabs[0].href
+  );
+
   return (
     <div
       className={cn(
@@ -26,8 +31,11 @@ export function LinkTabs({ tabs, className }: LinkTabsProps) {
       )}
     >
       {tabs.map((tab) => {
-        const isActive =
-          pathname === tab.href || pathname.startsWith(`${tab.href}/`);
+        const isBase = tab.href === baseHref;
+
+        const isActive = isBase
+          ? pathname === tab.href
+          : pathname === tab.href || pathname.startsWith(`${tab.href}/`);
 
         return (
           <Link

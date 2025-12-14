@@ -1,4 +1,4 @@
 import { redirect } from "next/navigation";
 export default function page() {
-  return redirect("/dashboard/events");
+  return redirect("/dashboard/events/all");
 }

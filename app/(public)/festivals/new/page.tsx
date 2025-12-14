@@ -11,7 +11,8 @@ import {
   SelectItem,
   SelectContent,
 } from "@/components/ui/select";
-import { TOrisa } from "@/app/orisha/page";
+import { TOrisa } from "../../orisha/page";
+
 
 const MONTH_NAMES = [
   "January",

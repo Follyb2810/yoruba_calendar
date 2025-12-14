@@ -18,3 +18,31 @@ interface Festival {
 interface FestivalsResponse {
   festivals: Festival[];
 }
+
+export type EventFormData = {
+  // Step 1
+  name: string;
+  description: string;
+  orishaId: number;
+
+  // Step 2
+  country: string;
+  eventType: "physical" | "virtual";
+  location?: string;
+  eventLink?: string;
+  timezone: string;
+  dates: Date[];
+  startDate: Date | null;
+  endDate: Date | null;
+  image?: File;
+  banner?: File;
+
+  // Step 3
+  ticketType: "free" | "single" | "group";
+  tickets?: {
+    name: string;
+    price: number;
+    quantity?: number;
+    maxPerGroup?: number;
+  }[];
+};
