@@ -1,4 +1,4 @@
-import { YORUBA_YEAR_OFFSET } from "@/app/calendar/_component/mocks";
+import { YORUBA_YEAR_OFFSET } from "@/app/(public)/calendar/_component/mocks";
 
 export default function Footer() {
   return (

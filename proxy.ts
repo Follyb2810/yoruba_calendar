@@ -1,33 +1,90 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { auth } from "./utils/auth";
 
+//! client: const { data: session, status } = useSession()
+//! server:  const session = await getSession()
+//! api route  const session = await getServerSession(context.req, context.res, authOptions)
 export async function proxy(request: NextRequest) {
   const url = request.nextUrl.clone();
-  const token = await getToken({
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET,
-  });
-  if (url.pathname.startsWith("/admin")) {
-    if (
-      !token ||
-      !Array.isArray(token.roles) ||
-      !token.roles.includes("ADMIN")
-    ) {
-      url.pathname = "/signin";
-      return NextResponse.redirect(url);
-    }
-  }
-  if (url.pathname.startsWith("/dashboard")) {
-    if (!token) {
-      url.pathname = "/signin";
-      return NextResponse.redirect(url);
-    }
+  const pathname = url.pathname;
+  const session = await auth();
+  if (pathname.startsWith("/signin") || pathname.startsWith("/signup")) {
+    return NextResponse.next();
   }
 
-  return NextResponse.next();
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (!secret) {
+    console.error("NEXTAUTH_SECRET is missing");
+    return NextResponse.next();
+  }
+
+  try {
+    const token = await getToken({
+      req: request,
+      secret,
+      secureCookie: process.env.NODE_ENV === "production",
+    });
+    console.log({ token });
+    if (pathname.startsWith("/admin")) {
+      if (
+        !token ||
+        !Array.isArray(token.roles) ||
+        !token.roles.includes("ADMIN")
+      ) {
+        url.pathname = "/signin";
+        // url.searchParams.set("callbackUrl", pathname);
+        return NextResponse.redirect(url);
+      }
+    }
+
+    if (pathname.startsWith("/dashboard")) {
+      // if (!token) {
+      if (!session) {
+        url.pathname = "/signin";
+        // url.searchParams.set("callbackUrl", pathname);
+        return NextResponse.redirect(url);
+      }
+    }
+
+    return NextResponse.next();
+  } catch (error) {
+    console.error("Middleware error:", error);
+    return NextResponse.next();
+  }
 }
 
 export const config = { matcher: ["/admin/:path*", "/dashboard/:path*"] };
+// import { NextRequest, NextResponse } from "next/server";
+// import { getToken } from "next-auth/jwt";
+
+// export async function proxy(request: NextRequest) {
+//   const url = request.nextUrl.clone();
+//   const token = await getToken({
+//     req: request,
+//     secret: process.env.NEXTAUTH_SECRET,
+//   });
+//   if (url.pathname.startsWith("/admin")) {
+//     if (
+//       !token ||
+//       !Array.isArray(token.roles) ||
+//       !token.roles.includes("ADMIN")
+//     ) {
+//       url.pathname = "/signin";
+//       return NextResponse.redirect(url);
+//     }
+//   }
+//   if (url.pathname.startsWith("/dashboard")) {
+//     if (!token) {
+//       url.pathname = "/signin";
+//       return NextResponse.redirect(url);
+//     }
+//   }
+
+//   return NextResponse.next();
+// }
+
+// export const config = { matcher: ["/admin/:path*", "/dashboard/:path*"] };
 // const session = await auth.api.getSession({ headers: request.headers });
 // const { pathname } = request.nextUrl;
 

@@ -1,4 +1,4 @@
-import { FESTIVALS } from "@/app/calendar/_component/mocks";
+import { FESTIVALS } from "@/app/(public)/calendar/_component/mocks";
 
 export function toKeyDate(year: number, m: number, d: number) {
   return new Date(year, m - 1, d, 0, 0, 0, 0);

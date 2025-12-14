@@ -1,7 +1,5 @@
-import {
-  ORISA_NAMES,
-  YORUBA_YEAR_OFFSET,
-} from "@/app/calendar/_component/mocks";
+
+import { YORUBA_YEAR_OFFSET,ORISA_NAMES } from "@/app/(public)/calendar/_component/mocks";
 import { toKeyDate } from "./getOrisaNameForDate";
 
 export function getYorubaYear(date: Date) {
