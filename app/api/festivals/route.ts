@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     const festival = await prisma.festival.create({
       data: {
         ...data,
-        // userId: session.user.id,
+        // userId: session.user.id,q
       },
     });
     return NextResponse.json({ festival }, { status: 201 });

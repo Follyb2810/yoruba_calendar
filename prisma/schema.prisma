@@ -7,9 +7,7 @@ datasource db {
   provider = "sqlite"
 }
 
-///////////////////////////////////////////////////////
-// USER + ROLES
-///////////////////////////////////////////////////////
+// USERS + ROLES
 
 model User {
   id               String    @id @default(cuid())
@@ -21,8 +19,9 @@ model User {
   twoFactorEnabled Boolean   @default(false)
 
   roles     UserRole[]
-  festivals Festival[]
-  orisas    Orisa[]
+  festivals Festival[] // festivals created by this user
+  orisas    Orisa[] // orisas created by this user
+  tickets   Ticket[] // tickets created by this user
 
   accounts Account[]
   sessions Session[]
@@ -52,9 +51,7 @@ model UserRole {
   @@map("user_roles")
 }
 
-///////////////////////////////////////////////////////
-// EVENT / FESTIVAL SYSTEM
-///////////////////////////////////////////////////////
+// ORISA
 
 model Orisa {
   id        Int        @id @default(autoincrement())
@@ -65,28 +62,58 @@ model Orisa {
 }
 
 model Festival {
-  id         Int    @id @default(autoincrement())
-  title      String
-  startYear  Int
-  startMonth Int
-  startDay   Int
-  endYear    Int
-  endMonth   Int
-  endDay     Int
-  location   String
+  id          Int    @id @default(autoincrement())
+  title       String
+  description String
 
-  user   User   @relation(fields: [userId], references: [id])
-  userId String
-
-  orisa   Orisa @relation(fields: [orisaId], references: [id])
   orisaId Int
+  orisa   Orisa @relation(fields: [orisaId], references: [id])
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  // Step 2: Event Details
+  country   String
+  eventType String // "physical" or "virtual"
+  location  String? // optional if virtual
+  eventLink String? // optional if physical
+  timezone  String
+  startDate DateTime
+  startTime String? // optional, for UI convenience (HH:mm)
+  endDate   DateTime
+  endTime   String? // optional, for UI convenience (HH:mm)
+
+  // Step 3: Tickets
+  ticketType String // "free" | "single" | "group"
+  tickets    Ticket[]
+
+  image  String? // could store path or URL
+  banner String? // could store path or URL
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
-///////////////////////////////////////////////////////
-// NEXTAUTH REQUIRED MODELS
-///////////////////////////////////////////////////////
+// TICKETS
+
+model Ticket {
+  id         Int      @id @default(autoincrement())
+  festival   Festival @relation(fields: [festivalId], references: [id])
+  festivalId Int
+
+  creator   User   @relation(fields: [creatorId], references: [id])
+  creatorId String
+
+  name        String
+  price       Float
+  quantity    Int?
+  maxPerGroup Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// NEXTAUTH
 
 model Account {
   id                String @id @default(cuid())

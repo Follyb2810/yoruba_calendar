@@ -69,7 +69,7 @@ export default function DashboardLayout({
                 setMobileOpen(false);
               }}
             />
-            <SidebarItem
+            {/* <SidebarItem
               icon={<Tag />}
               label="Discounts"
               onClick={() => {
@@ -84,7 +84,7 @@ export default function DashboardLayout({
                 push("/dashboard/box_office");
                 setMobileOpen(false);
               }}
-            />
+            /> */}
             <SidebarItem
               icon={<User />}
               label="Account"

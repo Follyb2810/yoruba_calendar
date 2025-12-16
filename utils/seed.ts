@@ -64,6 +64,7 @@ export async function runSeedIfEmpty() {
 
   const ALL_ROLES = ["USER", "CREATOR", "MODERATOR", "ADMIN", "SUPERADMIN"];
 
+  // Create roles
   for (const name of ALL_ROLES) {
     await prisma.role.upsert({
       where: { name },
@@ -72,6 +73,7 @@ export async function runSeedIfEmpty() {
     });
   }
 
+  // Create admin user
   const adminEmail = process.env.ADMIN_EMAIL ?? "admin@dev.com";
   const adminPassword = process.env.ADMIN_PASSWORD ?? "admin1234";
   const hashed = await bcrypt.hash(adminPassword, 10);
@@ -94,6 +96,7 @@ export async function runSeedIfEmpty() {
     });
   }
 
+  // Upsert Orisas
   const orisaMap: Record<string, number> = {};
 
   for (const ori of ORISAS) {
@@ -111,22 +114,24 @@ export async function runSeedIfEmpty() {
     const already = await prisma.festival.findFirst({
       where: { title: f.title },
     });
-
     if (already) continue;
+
+    const startDate = new Date(currentYear, f.startMonth - 1, f.startDay);
+    const endDate = new Date(currentYear, f.endMonth - 1, f.endDay);
 
     await prisma.festival.create({
       data: {
         title: f.title,
+        description: `${f.title} description`,
         location: "",
         userId: admin.id,
         orisaId: orisaMap[f.orisaName],
-
-        startYear: currentYear,
-        endYear: currentYear,
-        startMonth: f.startMonth,
-        startDay: f.startDay,
-        endMonth: f.endMonth,
-        endDay: f.endDay,
+        country: "Nigeria",
+        eventType: "physical",
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        startDate,
+        endDate,
+        ticketType: "free",
       },
     });
   }
@@ -134,6 +139,7 @@ export async function runSeedIfEmpty() {
   console.log("Seeding completed!");
 }
 
+// Uncomment to run manually
 // runSeedIfEmpty()
 //   .catch((e) => {
 //     console.error("Seed error:", e);
