@@ -43,5 +43,44 @@ export const stepTwoSchema = z
   );
 
 export const stepThreeSchema = z.object({
-  ticketType: z.enum(["free", "single", "group"]),
+  ticketType: z.enum(["single", "group"]),
+  tickets: z.array(
+    z
+      .object({
+        name: z.string().min(1),
+        type: z.enum(["single", "group"]),
+        isFree: z.boolean(),
+        price: z.number().optional(),
+        quantity: z.number().optional(),
+        maxPerGroup: z.number().optional(),
+      })
+      .superRefine((ticket, ctx) => {
+        if (
+          !ticket.isFree &&
+          (ticket.price === undefined || ticket.price < 0)
+        ) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Price is required for paid tickets",
+            path: ["price"],
+          });
+        }
+        if (ticket.maxPerGroup !== undefined && ticket.maxPerGroup < 1) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Max per group must be at least 1",
+            path: ["maxPerGroup"],
+          });
+        }
+        if (ticket.quantity !== undefined && ticket.quantity < 1) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Quantity must be at least 1",
+            path: ["quantity"],
+          });
+        }
+      })
+  ),
 });
+
+// export type IGetAppointmentsQuery = z.infer<typeof GetAppointmentsQuerySchema>;

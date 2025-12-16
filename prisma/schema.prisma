@@ -84,7 +84,7 @@ model Festival {
   endTime   String? // optional, for UI convenience (HH:mm)
 
   // Step 3: Tickets
-  ticketType String // "free" | "single" | "group"
+  ticketType String // "single" | "group"
   tickets    Ticket[]
 
   image  String? // could store path or URL
@@ -93,8 +93,6 @@ model Festival {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
-
-// TICKETS
 
 model Ticket {
   id         Int      @id @default(autoincrement())
@@ -105,9 +103,12 @@ model Ticket {
   creatorId String
 
   name        String
-  price       Float
-  quantity    Int?
-  maxPerGroup Int?
+  type        String // "single" | "group"
+  isFree      Boolean
+  price       Float? // required if isFree = false
+  quantity    Int // total available tickets
+  maxPerGroup Int? // max tickets per person/group
+  sold        Int     @default(0) // track how many tickets sold
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

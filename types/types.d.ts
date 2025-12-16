@@ -18,6 +18,8 @@ interface Festival {
 interface FestivalsResponse {
   festivals: Festival[];
 }
+export type ITicketType = "single" | "group";
+export type IEventType = "physical" | "virtual";
 
 export type EventFormData = {
   // Step 1
@@ -27,11 +29,11 @@ export type EventFormData = {
 
   // Step 2
   country: string;
-  eventType: "physical" | "virtual";
+  eventType: IEventType;
   location?: string;
   eventLink?: string;
-  endTime?: string;
   startTime?: string;
+  endTime?: string;
   timezone: string;
   dates: Date[] | [];
   startDate: string;
@@ -40,10 +42,12 @@ export type EventFormData = {
   banner?: File;
 
   // Step 3
-  ticketType: "free" | "single" | "group";
+  ticketType: ITicketType;
   tickets?: {
     name: string;
-    price: number;
+    type: ITicketType;
+    isFree: boolean;
+    price?: number;
     quantity?: number;
     maxPerGroup?: number;
   }[];

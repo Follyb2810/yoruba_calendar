@@ -1,0 +1,17 @@
+const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+
+// Check availability
+if (ticket.sold + quantity > ticket.quantity) {
+  throw new Error("Not enough tickets available");
+}
+
+// Check max per group
+if (ticket.maxPerGroup && quantity > ticket.maxPerGroup) {
+  throw new Error(`Cannot buy more than ${ticket.maxPerGroup} tickets at once`);
+}
+
+// Update sold count
+await prisma.ticket.update({
+  where: { id: ticketId },
+  data: { sold: ticket.sold + quantity },
+});

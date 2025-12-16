@@ -14,7 +14,5 @@ export const zodFormikValidate =
       }
       fieldErrors[path].push(issue.message);
     }
-    console.log({ fieldErrors_Flatten: result.error.flatten().fieldErrors });
-    console.log({ fieldErrors });
     return fieldErrors;
   };

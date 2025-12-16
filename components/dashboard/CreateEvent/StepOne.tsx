@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { EventFormData } from "@/types/types";
 import { zodFormikValidate } from "@/utils/zodFormik";
-import { stepOneSchema } from "@/schemas/event.schema";
+import { stepOneSchema } from "@/helpers/zod/event.schema";
 
 export type TOrisa = { id: number; name: string };
 
@@ -49,70 +49,67 @@ export function StepOne({ data, setData, onNext }: StepWithNextProps) {
         onNext();
       }}
     >
-      {({ errors, touched, isValid, setFieldValue }) => {
-        console.log({ errors });
-        return (
-          <Form className="space-y-6">
-            <div className="space-y-1">
-              <Field as={Input} name="name" placeholder="Event name" />
-              {touched.name && errors.name && (
-                <p className="text-sm text-red-500">{errors.name}</p>
-              )}
-            </div>
+      {({ errors, touched, isValid, setFieldValue }) => (
+        <Form className="space-y-6">
+          <div className="space-y-1">
+            <Field as={Input} name="name" placeholder="Event name" />
+            {touched.name && errors.name && (
+              <p className="text-sm text-red-500">{errors.name}</p>
+            )}
+          </div>
 
-            <div className="space-y-1">
-              <Field
-                as={Textarea}
-                name="description"
-                placeholder="Describe your event..."
-                className="min-h-[120px]"
-              />
-              {touched.description && errors.description && (
-                <p className="text-sm text-red-500">{errors.description}</p>
-              )}
-            </div>
+          <div className="space-y-1">
+            <Field
+              as={Textarea}
+              name="description"
+              placeholder="Describe your event..."
+              className="min-h-[120px]"
+            />
+            {touched.description && errors.description && (
+              <p className="text-sm text-red-500">{errors.description}</p>
+            )}
+          </div>
 
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Orisa</label>
-              <Select
-                onValueChange={(value) =>
-                  setFieldValue("orishaId", Number(value))
-                }
-                value={data.orishaId ? String(data.orishaId) : undefined}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose Orisa" />
-                </SelectTrigger>
-                <SelectContent>
-                  {orisas.map((o) => (
-                    <SelectItem key={o.id} value={String(o.id)}>
-                      {o.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {touched.orishaId && errors.orishaId && (
-                <p className="text-sm text-red-500">{errors.orishaId}</p>
-              )}
-            </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Orisa</label>
+            <Select
+              onValueChange={(value) =>
+                setFieldValue("orishaId", Number(value))
+              }
+              value={data.orishaId ? String(data.orishaId) : undefined}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Choose Orisa" />
+              </SelectTrigger>
+              <SelectContent>
+                {orisas.map((o) => (
+                  <SelectItem key={o.id} value={String(o.id)}>
+                    {o.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {touched.orishaId && errors.orishaId && (
+              <p className="text-sm text-red-500">{errors.orishaId}</p>
+            )}
+          </div>
 
-            <div className="flex justify-end pt-4">
-              <button
-                type="submit"
-                disabled={!isValid}
-                className={`px-6 py-2 rounded-md text-white transition
+          <div className="flex justify-end pt-4">
+            <button
+              type="submit"
+              disabled={!isValid}
+              className={`px-6 py-2 rounded-md text-white transition
                 ${
                   isValid
                     ? "bg-orange-500 hover:bg-orange-600"
                     : "bg-gray-300 cursor-not-allowed"
                 }`}
-              >
-                Next
-              </button>
-            </div>
-          </Form>
-        );
-      }}
+            >
+              Next
+            </button>
+          </div>
+        </Form>
+      )}
     </Formik>
   );
 }

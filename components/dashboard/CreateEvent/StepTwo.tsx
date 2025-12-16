@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { StepWithNextProps } from "./StepOne";
 import { zodFormikValidate } from "@/utils/zodFormik";
-import { stepTwoSchema } from "@/schemas/event.schema";
+import { stepTwoSchema } from "@/helpers/zod/event.schema";
 
 const COUNTRIES = ["Nigeria", "Ghana", "Togo", "Benin", "Other"];
 
