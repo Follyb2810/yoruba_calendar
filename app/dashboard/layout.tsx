@@ -25,7 +25,7 @@ export default function DashboardLayout({
   const { push } = useRouter();
 
   return (
-    <section className="min-h-screen bg-muted/30">
+    <section className="h-screen w-screen overflow-hidden bg-muted/30">
       <header className="md:hidden flex items-center justify-between px-4 h-14 bg-white border-b fixed top-0 left-0 right-0 z-50">
         <Link href="/" className="text-xl font-bold text-orange-500">
           Kọ́jọ́dá
@@ -35,24 +35,31 @@ export default function DashboardLayout({
         </button>
       </header>
 
-      <div className="flex pt-14 md:pt-0">
+      <div className="flex h-full pt-14 md:pt-0">
+        {/* Sidebar */}
         <aside
           className={`
-            fixed top-0 left-0 h-full w-48 bg-white border-r flex flex-col
+            fixed md:static top-14 md:top-0 left-0
+            h-[calc(100vh-3.5rem)] md:h-full
+            w-48 bg-white border-r flex flex-col
             transform transition-transform duration-300 ease-in-out
             z-40
-            md:static md:translate-x-0
-            ${mobileOpen ? "translate-x-0 z-40" : "-translate-x-full"}
+            ${
+              mobileOpen
+                ? "translate-x-0"
+                : "-translate-x-full md:translate-x-0"
+            }
           `}
         >
           <Link
             href="/"
-            className="hidden md:block px-6 py-5 text-2xl font-bold text-orange-500"
+            className="hidden md:block px-6 py-5 text-2xl font-bold text-orange-500 border-b"
           >
             Kọ́jọ́dá
           </Link>
 
-          <nav className="flex-1 px-4 space-y-2 mt-16 md:mt-4">
+          {/* Navigation */}
+          <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
             <SidebarItem
               icon={<CalendarDays />}
               label="Events"
@@ -88,6 +95,7 @@ export default function DashboardLayout({
             />
           </nav>
 
+          {/* Bottom actions */}
           <div className="px-4 py-4 space-y-2 border-t">
             <SidebarItem
               icon={<HelpCircle />}
@@ -103,6 +111,7 @@ export default function DashboardLayout({
           </div>
         </aside>
 
+        {/* Overlay */}
         {mobileOpen && (
           <div
             className="fixed inset-0 bg-black/30 z-30 md:hidden"
@@ -110,7 +119,10 @@ export default function DashboardLayout({
           />
         )}
 
-        <main className="flex-1 p-4">{children}</main>
+        {/* Main content */}
+        <main className="flex-1 h-full overflow-y-auto bg-white p-4">
+          {children}
+        </main>
       </div>
     </section>
   );

@@ -19,10 +19,13 @@ export type TOrisa = { id: number; name: string };
 export type StepProps = {
   data: EventFormData;
   setData: React.Dispatch<React.SetStateAction<EventFormData>>;
+};
+
+export type StepWithNextProps = StepProps & {
   onNext: () => void;
 };
 
-export function StepOne({ data, setData, onNext }: StepProps) {
+export function StepOne({ data, setData, onNext }: StepWithNextProps) {
   const [orisas, setOrisas] = useState<TOrisa[]>([]);
 
   useEffect(() => {

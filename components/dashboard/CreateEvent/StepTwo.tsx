@@ -9,17 +9,13 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { StepProps } from "./StepOne";
+import { StepWithNextProps } from "./StepOne";
 import { zodFormikValidate } from "@/utils/zodFormik";
 import { stepTwoSchema } from "@/schemas/event.schema";
 
 const COUNTRIES = ["Nigeria", "Ghana", "Togo", "Benin", "Other"];
 
-export function StepTwo({
-  data,
-  setData,
-  onNext,
-}: StepProps & { onNext: () => void }) {
+export function StepTwo({ data, setData, onNext }: StepWithNextProps) {
   return (
     <Formik
       initialValues={{

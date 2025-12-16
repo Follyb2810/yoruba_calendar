@@ -23,7 +23,7 @@ export type EventFormData = {
   // Step 1
   name: string;
   description: string;
-  orishaId: number;
+  orishaId?: number;
 
   // Step 2
   country: string;

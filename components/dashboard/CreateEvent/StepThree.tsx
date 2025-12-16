@@ -5,11 +5,7 @@ import { zodFormikValidate } from "@/utils/zodFormik";
 import { StepProps } from "./StepOne";
 import { stepThreeSchema } from "@/schemas/event.schema";
 
-export function StepThree({
-  data,
-  setData,
-  onNext,
-}: StepProps & { onNext: () => void }) {
+export function StepThree({ data, setData }: StepProps) {
   return (
     <Formik
       initialValues={{
@@ -19,7 +15,7 @@ export function StepThree({
       validateOnMount
       onSubmit={(values) => {
         setData((prev) => ({ ...prev, ...values }));
-        onNext();
+        // onNext();
       }}
     >
       {({ errors, touched, isValid, setFieldValue, values }) => (

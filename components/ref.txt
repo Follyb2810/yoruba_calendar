@@ -1,0 +1,298 @@
+import { Formik, Form, Field } from "formik";
+import { ChangeEvent, KeyboardEvent, useRef, forwardRef, useImperativeHandle } from "react";
+import { PinSchema } from "../../utils/validation";
+import { IPinFormikEdit } from "../../types";
+
+export type PinInputProps = {
+  onSubmit?: (pin: string) => void;
+  showSubmitButton?: boolean;
+  buttonText?: string;
+  isLoading?: boolean;
+  autoFocus?: boolean;
+  disabled?: boolean;
+  onPinChange?: (pin: string, isComplete: boolean) => void;
+  error?: string;
+  className?: string;
+};
+
+export type PinInputHandle = {
+  resetPin: () => void;
+  focus: () => void;
+  getPin: () => string;
+};
+
+const PinInput = forwardRef<PinInputHandle, PinInputProps>(
+  (
+    {
+      onSubmit,
+      showSubmitButton = true,
+      buttonText = "Continue",
+      isLoading = false,
+      autoFocus = true,
+      disabled = false,
+      onPinChange,
+      error: externalError,
+      className = "",
+    },
+    ref
+  ) => {
+    const formRef = useRef(null);
+    const inputRefs: React.RefObject<HTMLInputElement | null>[] = [
+      useRef<HTMLInputElement>(null),
+      useRef<HTMLInputElement>(null),
+      useRef<HTMLInputElement>(null),
+      useRef<HTMLInputElement>(null),
+    ];
+
+    const handleSubmit = (values: IPinFormikEdit) => {
+      const pin = values.start + values.second + values.third + values.fourth;
+      onSubmit?.(pin);
+    };
+
+    const handleAutoNext = (index: number, value: string) => {
+      if (value && index < 3) {
+        inputRefs[index + 1]?.current?.focus();
+      }
+    };
+
+    const handleBackspace = (
+      index: number,
+      e: KeyboardEvent<HTMLInputElement>
+    ) => {
+      if (e.key === "Backspace") {
+        const input = inputRefs[index]?.current;
+        if (input && input.value === "" && index > 0) {
+          inputRefs[index - 1]?.current?.focus();
+        }
+      }
+    };
+
+    const handleValueChange = (name: keyof IPinFormikEdit, value: string) => {
+      const form = formRef.current as any;
+      if (form && form.values) {
+        const currentValues = { ...form.values, [name]: value };
+        const pin = currentValues.start + currentValues.second + 
+                   currentValues.third + currentValues.fourth;
+        const isComplete = pin.length === 4;
+        onPinChange?.(pin, isComplete);
+      }
+    };
+
+    // Expose methods via ref
+    useImperativeHandle(ref, () => ({
+      resetPin: () => {
+        const form = formRef.current as any;
+        form?.resetForm();
+        inputRefs[0]?.current?.focus();
+      },
+      focus: () => {
+        inputRefs[0]?.current?.focus();
+      },
+      getPin: () => {
+        const form = formRef.current as any;
+        if (form?.values) {
+          const { start, second, third, fourth } = form.values;
+          return start + second + third + fourth;
+        }
+        return "";
+      },
+    }));
+
+    return (
+      <Formik<IPinFormikEdit>
+        initialValues={{
+          start: "",
+          second: "",
+          third: "",
+          fourth: "",
+        }}
+        validationSchema={PinSchema}
+        onSubmit={handleSubmit}
+        innerRef={formRef}
+      >
+        {({ errors, touched, setFieldValue, dirty, isValid, values }) => (
+          <Form className={className}>
+            <div className="flex justify-center gap-4 mb-3">
+              {(
+                ["start", "second", "third", "fourth"] as Array<
+                  keyof IPinFormikEdit
+                >
+              ).map((name, index) => (
+                <Field
+                  type="password"
+                  name={name}
+                  maxLength={1}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  autoFocus={autoFocus && index === 0}
+                  className={`w-12 h-12 text-center text-xl bg-[#D1D1D1] rounded-md font-normal border-2 placeholder-[#C7C8D3] ${
+                    errors[name] && touched[name]
+                      ? "border-red-500"
+                      : "border-[#D1D1D1]"
+                  } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                  ref={inputRefs[index]}
+                  disabled={disabled}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                    const val = e.target.value.replace(/\D/, "");
+                    setFieldValue(name, val);
+                    handleAutoNext(index, val);
+                    handleValueChange(name, val);
+                  }}
+                  onKeyDown={(e: KeyboardEvent<HTMLInputElement>) =>
+                    handleBackspace(index, e)
+                  }
+                  key={name}
+                />
+              ))}
+            </div>
+            
+            {/* Show validation error or external error */}
+            {(Object.values(errors).length > 0 || externalError) && (
+              <p className="text-red-500 text-center text-sm mb-3">
+                {externalError || "Enter all 4 digits correctly."}
+              </p>
+            )}
+            
+            {/* Submit button - optional */}
+            {showSubmitButton && onSubmit && (
+              <div className="flex justify-center">
+                <button
+                  type="submit"
+                  disabled={!isValid || !dirty || disabled || isLoading}
+                  className={`px-6 py-2 rounded-md font-medium transition-colors ${
+                    !isValid || !dirty || disabled || isLoading
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      : "bg-blue-600 text-white hover:bg-blue-700"
+                  }`}
+                >
+                  {isLoading ? "Processing..." : buttonText}
+                </button>
+              </div>
+            )}
+          </Form>
+        )}
+      </Formik>
+    );
+  }
+);
+
+PinInput.displayName = "PinInput";
+export default PinInput;
+
+
+
+import PinInput, { PinInputHandle, PinInputProps } from "./PinInput";
+import Button from "../Button/Button";
+import { useRef } from "react";
+
+export type EnterTransactionPinProps = {
+  onSubmit: (pin: string) => void;
+  isLoading?: boolean;
+  title?: string;
+  pinInputProps?: Omit<PinInputProps, "onSubmit">;
+};
+
+const EnterTransactionPin = ({
+  onSubmit,
+  isLoading,
+  title = "Enter a 4-digit PIN to secure your transactions.",
+  pinInputProps = {},
+}: EnterTransactionPinProps) => {
+  const pinInputRef = useRef<PinInputHandle>(null);
+
+  return (
+    <section>
+      <h5 className="text-lg font-semibold text-center">
+        Enter Transaction PIN
+      </h5>
+      <p className="text-sm text-gray-600 mb-4 text-center">{title}</p>
+
+      <PinInput
+        ref={pinInputRef}
+        onSubmit={onSubmit}
+        isLoading={isLoading}
+        showSubmitButton={false}
+        onPinChange={(pin, isComplete) => {
+          console.log("Current PIN:", pin, "Complete:", isComplete);
+        }}
+        {...pinInputProps}
+      />
+      
+      <div className="flex flex-col sm:flex-row justify-between gap-3 mt-4">
+        <Button
+          onClick={() => {
+            const pin = pinInputRef.current?.getPin();
+            if (pin.length === 4) {
+              onSubmit(pin);
+            }
+          }}
+          disabled={isLoading}
+          loading={isLoading}
+        >
+          Continue
+        </Button>
+      </div>
+    </section>
+  );
+};
+
+export default EnterTransactionPin;
+
+import PinInput, { PinInputHandle } from "./PinInput";
+import { useRef } from "react";
+
+function PaymentForm() {
+  const pinInputRef = useRef<PinInputHandle>(null);
+  
+  const handlePayment = (pin: string) => {
+    console.log("Processing payment with PIN:", pin);
+  };
+  
+  return (
+    <div>
+      <h3>Enter PIN for Payment</h3>
+      <PinInput
+        ref={pinInputRef}
+        onSubmit={handlePayment}
+        buttonText="Pay Now"
+        onPinChange={(pin, isComplete) => {
+          if (isComplete) {
+            // Auto-submit when PIN is complete
+            handlePayment(pin);
+          }
+        }}
+      />
+    </div>
+  );
+}
+
+
+import PinInput from "./PinInput";
+
+function WithdrawalForm() {
+  const handleWithdrawal = (pin: string) => {
+    console.log("Processing withdrawal with PIN:", pin);
+  };
+  
+  return (
+    <div className="space-y-4">
+      <div>
+        <label>Amount</label>
+        <input type="number" className="border p-2 w-full" />
+      </div>
+      <div>
+        <label>Account Number</label>
+        <input type="text" className="border p-2 w-full" />
+      </div>
+      
+      <div className="border-t pt-4">
+        <h4>Security PIN</h4>
+        <PinInput
+          onSubmit={handleWithdrawal}
+          buttonText="Confirm Withdrawal"
+          className="mt-2"
+        />
+      </div>
+    </div>
+  );
+}
