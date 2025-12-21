@@ -7,11 +7,17 @@ interface UpdatePasswordBody {
   currentPassword?: string;
   newPassword: string;
 }
+export async function GET() {}
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+// export async function POST() {}
+
+export async function PUT() {}
+
+export async function PATCH() {}
+
+export async function DELETE() {}
+
+export default async function POST(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }

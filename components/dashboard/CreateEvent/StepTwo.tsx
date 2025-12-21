@@ -12,6 +12,7 @@ import {
 import { StepWithNextProps } from "./StepOne";
 import { zodFormikValidate } from "@/utils/zodFormik";
 import { stepTwoSchema } from "@/helpers/zod/event.schema";
+import { Label } from "@/components/ui/label";
 
 const COUNTRIES = ["Nigeria", "Ghana", "Togo", "Benin", "Other"];
 
@@ -38,7 +39,7 @@ export function StepTwo({ data, setData, onNext }: StepWithNextProps) {
       {({ errors, touched, isValid, setFieldValue, values }) => (
         <Form className="space-y-6">
           <div className="space-y-1">
-            <label className="text-sm font-medium">Country</label>
+            <Label className="text-sm font-medium">Country</Label>
             <Select
               value={values.country}
               onValueChange={(v) => setFieldValue("country", v)}
@@ -59,16 +60,16 @@ export function StepTwo({ data, setData, onNext }: StepWithNextProps) {
             )}
           </div>
           <div className="space-y-1">
-            <label className="text-sm font-medium">Event Type</label>
+            <Label className="text-sm font-medium">Event Type</Label>
             <div className="flex gap-4">
-              <label className="flex items-center gap-2">
+              <Label className="flex items-center gap-2">
                 <input
                   type="radio"
                   checked={values.eventType === "physical"}
                   onChange={() => setFieldValue("eventType", "physical")}
                 />
                 Physical
-              </label>
+              </Label>
               <label className="flex items-center gap-2">
                 <input
                   type="radio"
@@ -81,6 +82,7 @@ export function StepTwo({ data, setData, onNext }: StepWithNextProps) {
           </div>
           {values.eventType === "physical" && (
             <div className="space-y-1">
+              <Label htmlFor="location">Event location</Label>
               <Field as={Input} name="location" placeholder="Event location" />
               {touched.location && errors.location && (
                 <p className="text-sm text-red-500">{errors.location}</p>
@@ -90,6 +92,7 @@ export function StepTwo({ data, setData, onNext }: StepWithNextProps) {
 
           {values.eventType === "virtual" && (
             <div className="space-y-1">
+              <Label htmlFor="eventLink">Description</Label>
               <Field as={Input} name="eventLink" placeholder="Event link" />
               {touched.eventLink && errors.eventLink && (
                 <p className="text-sm text-red-500">{errors.eventLink}</p>
@@ -98,10 +101,16 @@ export function StepTwo({ data, setData, onNext }: StepWithNextProps) {
           )}
 
           <div className="space-y-1">
-            <label className="text-sm font-medium">Start</label>
+            <Label>Start</Label>
             <div className="flex gap-2">
-              <Field as={Input} type="date" name="startDate" />
-              <Field as={Input} type="time" name="startTime" />
+              <>
+                <Label htmlFor="startDate">Start Date</Label>
+                <Field as={Input} type="date" name="startDate" />
+              </>
+              <>
+                <Label htmlFor="startTime">Start Time</Label>
+                <Field as={Input} type="time" name="startTime" />
+              </>
             </div>
             {touched.startDate && errors.startDate && (
               <p className="text-sm text-red-500">{errors.startDate}</p>
@@ -112,10 +121,17 @@ export function StepTwo({ data, setData, onNext }: StepWithNextProps) {
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium">End</label>
+            <Label>End</Label>
+
             <div className="flex gap-2">
-              <Field as={Input} type="date" name="endDate" />
-              <Field as={Input} type="time" name="endTime" />
+              <>
+                <Label htmlFor="endDate">End Date</Label>
+                <Field as={Input} type="date" name="endDate" />
+              </>
+              <>
+                <Label htmlFor="endTime">End Time</Label>
+                <Field as={Input} type="time" name="endTime" />
+              </>
             </div>
             {touched.endDate && errors.endDate && (
               <p className="text-sm text-red-500">{errors.endDate}</p>

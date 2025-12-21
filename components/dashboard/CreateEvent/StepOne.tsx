@@ -13,6 +13,7 @@ import {
 import { EventFormData } from "@/types/types";
 import { zodFormikValidate } from "@/utils/zodFormik";
 import { stepOneSchema } from "@/helpers/zod/event.schema";
+import { Label } from "@/components/ui/label";
 
 export type TOrisa = { id: number; name: string };
 
@@ -52,6 +53,8 @@ export function StepOne({ data, setData, onNext }: StepWithNextProps) {
       {({ errors, touched, isValid, setFieldValue }) => (
         <Form className="space-y-6">
           <div className="space-y-1">
+            <Label htmlFor="name">Event Name</Label>
+
             <Field as={Input} name="name" placeholder="Event name" />
             {touched.name && errors.name && (
               <p className="text-sm text-red-500">{errors.name}</p>
@@ -59,6 +62,7 @@ export function StepOne({ data, setData, onNext }: StepWithNextProps) {
           </div>
 
           <div className="space-y-1">
+            <Label htmlFor="description">Description</Label>
             <Field
               as={Textarea}
               name="description"
@@ -71,7 +75,7 @@ export function StepOne({ data, setData, onNext }: StepWithNextProps) {
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium">Orisa</label>
+            <Label className="text-sm font-medium">Orisa</Label>
             <Select
               onValueChange={(value) =>
                 setFieldValue("orishaId", Number(value))

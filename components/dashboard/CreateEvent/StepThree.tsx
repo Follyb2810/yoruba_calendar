@@ -17,7 +17,7 @@ export function StepThree({ data, setData }: StepProps) {
           type: (t.type ?? data.ticketType) as ITicketType,
           isFree: t.isFree ?? true,
           price: t.price ?? 0,
-          quantity: t.quantity ?? 1,
+          quantity: t.quantity ?? 1, // total available
           maxPerGroup:
             t.maxPerGroup ?? (data.ticketType === "group" ? 1 : undefined),
         })) ?? [
@@ -46,30 +46,23 @@ export function StepThree({ data, setData }: StepProps) {
     >
       {({ errors, touched, isValid, setFieldValue, values }) => (
         <Form className="space-y-4">
+          {/* Ticket type selection */}
           <div className="flex flex-col gap-2">
-            <label className="flex items-center gap-2">
-              <Field
-                type="radio"
-                name="ticketType"
-                value="single"
-                checked={values.ticketType === "single"}
-                onChange={() => setFieldValue("ticketType", "single")}
-              />
-              Single Ticket
-            </label>
-
-            <label className="flex items-center gap-2">
-              <Field
-                type="radio"
-                name="ticketType"
-                value="group"
-                checked={values.ticketType === "group"}
-                onChange={() => setFieldValue("ticketType", "group")}
-              />
-              Group Ticket
-            </label>
+            {(["single", "group"] as ITicketType[]).map((type) => (
+              <label key={type} className="flex items-center gap-2">
+                <Field
+                  type="radio"
+                  name="ticketType"
+                  value={type}
+                  checked={values.ticketType === type}
+                  onChange={() => setFieldValue("ticketType", type)}
+                />
+                {type === "single" ? "Single Ticket" : "Group Ticket"}
+              </label>
+            ))}
           </div>
 
+          {/* Tickets FieldArray */}
           <FieldArray name="tickets">
             {({ push, remove }) => (
               <div className="space-y-4">
@@ -97,6 +90,7 @@ export function StepThree({ data, setData }: StepProps) {
                       placeholder="Ticket Name"
                     />
 
+                    {/* Free vs Paid */}
                     <div className="flex items-center gap-4">
                       <label className="flex items-center gap-2">
                         <Field
@@ -134,21 +128,23 @@ export function StepThree({ data, setData }: StepProps) {
                       />
                     )}
 
+                    {/* Max per group for group tickets */}
                     {values.ticketType === "group" && (
                       <Field
                         as={Input}
                         type="number"
                         name={`tickets.${index}.maxPerGroup`}
-                        placeholder="Max per group"
+                        placeholder="Max per person/group"
                         min={1}
                       />
                     )}
 
+                    {/* Quantity available */}
                     <Field
                       as={Input}
                       type="number"
                       name={`tickets.${index}.quantity`}
-                      placeholder="Quantity"
+                      placeholder="Total Quantity"
                       min={1}
                     />
                   </div>
@@ -159,7 +155,7 @@ export function StepThree({ data, setData }: StepProps) {
                   onClick={() =>
                     push({
                       name: "",
-                      type: values.ticketType, // <-- enforce union type
+                      type: values.ticketType,
                       isFree: true,
                       price: 0,
                       quantity: 1,
@@ -175,16 +171,16 @@ export function StepThree({ data, setData }: StepProps) {
             )}
           </FieldArray>
 
+          {/* Submit */}
           <div className="flex justify-end pt-4">
             <button
               type="submit"
               disabled={!isValid}
-              className={`px-6 py-2 rounded-md text-white transition
-                ${
-                  isValid
-                    ? "bg-orange-500 hover:bg-orange-600"
-                    : "bg-gray-300 cursor-not-allowed"
-                }`}
+              className={`px-6 py-2 rounded-md text-white transition ${
+                isValid
+                  ? "bg-orange-500 hover:bg-orange-600"
+                  : "bg-gray-300 cursor-not-allowed"
+              }`}
             >
               Finish
             </button>

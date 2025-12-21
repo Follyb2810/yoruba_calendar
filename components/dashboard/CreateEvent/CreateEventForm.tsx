@@ -17,7 +17,7 @@ export default function CreateEventForm() {
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     startDate: "",
     endDate: "",
-    ticketType: "free",
+    ticketType: "single",
     dates: [],
   });
 

@@ -85,6 +85,10 @@ export default function DashboardLayout({
                 setMobileOpen(false);
               }}
             /> */}
+          </nav>
+
+          {/* Bottom actions */}
+          <div className="px-4 py-4 space-y-2 border-t">
             <SidebarItem
               icon={<User />}
               label="Account"
@@ -93,19 +97,15 @@ export default function DashboardLayout({
                 setMobileOpen(false);
               }}
             />
-          </nav>
-
-          {/* Bottom actions */}
-          <div className="px-4 py-4 space-y-2 border-t">
-            <SidebarItem
-              icon={<HelpCircle />}
-              label="Help"
-              onClick={() => signOut({ redirectTo: "/" })}
-            />
             <SidebarItem
               icon={<LogOut />}
               label="Logout"
               danger
+              onClick={() => signOut({ redirectTo: "/" })}
+            />
+            <SidebarItem
+              icon={<HelpCircle />}
+              label="Help"
               onClick={() => signOut({ redirectTo: "/" })}
             />
           </div>

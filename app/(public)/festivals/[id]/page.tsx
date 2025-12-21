@@ -1,5 +1,6 @@
 import BackButton from "@/components/shared/BackButton";
 import { MONTH_NAMES, YORUBA_WEEK_DAYS } from "@/constants/mock";
+import { Festival } from "@/types/types";
 import { notFound } from "next/navigation";
 
 function formatYorubaDate(day: number, month: number, year: number) {
