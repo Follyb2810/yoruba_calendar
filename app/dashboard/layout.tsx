@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  BookOpen,
   CalendarDays,
-  Tag,
-  Ticket,
+  Package,
+  Shield,
+  Sparkles,
+  Wallet,
   User,
   HelpCircle,
   LogOut,
@@ -12,9 +15,10 @@ import {
   X,
 } from "lucide-react";
 import SidebarItem from "@/components/dashboard/SidebarItem";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { isAdmin, isCreator } from "@/utils/rbac";
 
 export default function DashboardLayout({
   children,
@@ -22,7 +26,30 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [orderBadge, setOrderBadge] = useState(0);
   const { push } = useRouter();
+  const pathname = usePathname();
+  const { data: session } = useSession();
+  const creator = isCreator(session?.user);
+  const admin = isAdmin(session?.user);
+
+  const isEventsActive = pathname.startsWith("/dashboard/events");
+  const isBooksActive = pathname.startsWith("/dashboard/books");
+  const isOrdersActive = pathname.startsWith("/dashboard/orders");
+  const isTeamActive = pathname.startsWith("/dashboard/team");
+  const isPayoutsActive = pathname.startsWith("/dashboard/payouts");
+
+  useEffect(() => {
+    if (!creator) {
+      setOrderBadge(0);
+      return;
+    }
+
+    fetch("/api/orders/unread-count", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : { count: 0 }))
+      .then((data) => setOrderBadge(data.count ?? 0))
+      .catch(() => setOrderBadge(0));
+  }, [creator, pathname]);
 
   return (
     <section className="h-screen w-screen overflow-hidden bg-muted/30">
@@ -36,7 +63,6 @@ export default function DashboardLayout({
       </header>
 
       <div className="flex h-full pt-14 md:pt-0">
-        {/* Sidebar */}
         <aside
           className={`
             fixed md:static top-14 md:top-0 left-0
@@ -58,40 +84,61 @@ export default function DashboardLayout({
             Kọ́jọ́dá
           </Link>
 
-          {/* Navigation */}
           <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
             <SidebarItem
               icon={<CalendarDays />}
               label="Events"
-              active
+              active={isEventsActive}
               onClick={() => {
                 push("/dashboard/events/all");
                 setMobileOpen(false);
               }}
             />
-            {/* <SidebarItem
-              icon={<Tag />}
-              label="Discounts"
-              onClick={() => {
-                push("/dashboard/discount");
-                setMobileOpen(false);
-              }}
-            />
-            <SidebarItem
-              icon={<Ticket />}
-              label="Box Office"
-              onClick={() => {
-                push("/dashboard/box_office");
-                setMobileOpen(false);
-              }}
-            /> */}
+            {creator ? (
+              <>
+                <SidebarItem
+                  icon={<BookOpen />}
+                  label="Books"
+                  active={isBooksActive}
+                  href="/dashboard/books"
+                />
+                <SidebarItem
+                  icon={<Package />}
+                  label="Orders"
+                  active={isOrdersActive}
+                  href="/dashboard/orders"
+                  badge={orderBadge}
+                />
+                <SidebarItem
+                  icon={<Wallet />}
+                  label="Payouts"
+                  active={isPayoutsActive}
+                  href="/dashboard/payouts"
+                />
+              </>
+            ) : (
+              <SidebarItem
+                icon={<Sparkles />}
+                label="Become Creator"
+                active={pathname.startsWith("/dashboard/become-creator")}
+                href="/dashboard/become-creator"
+              />
+            )}
+            {admin && (
+              <SidebarItem
+                icon={<Shield />}
+                label="Team"
+                active={isTeamActive}
+                href="/dashboard/team"
+              />
+            )}
           </nav>
 
-          {/* Bottom actions */}
           <div className="px-4 py-4 space-y-2 border-t">
             <SidebarItem
               icon={<User />}
               label="Account"
+              active={pathname.startsWith("/dashboard/account")}
               onClick={() => {
                 push("/dashboard/account");
                 setMobileOpen(false);
@@ -106,12 +153,11 @@ export default function DashboardLayout({
             <SidebarItem
               icon={<HelpCircle />}
               label="Help"
-              onClick={() => signOut({ redirectTo: "/" })}
+              onClick={() => push("/")}
             />
           </div>
         </aside>
 
-        {/* Overlay */}
         {mobileOpen && (
           <div
             className="fixed inset-0 bg-black/30 z-30 md:hidden"
@@ -119,7 +165,6 @@ export default function DashboardLayout({
           />
         )}
 
-        {/* Main content */}
         <main className="flex-1 h-full overflow-y-auto bg-white p-4">
           {children}
         </main>

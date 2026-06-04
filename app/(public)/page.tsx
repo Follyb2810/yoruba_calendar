@@ -23,6 +23,9 @@ export default function Home() {
           <Button asChild size="lg" variant="outline">
             <Link href="/festivals">Browse Festivals</Link>
           </Button>
+          <Button asChild size="lg" variant="outline">
+            <Link href="/books">Book Shop</Link>
+          </Button>
           <Button asChild size="lg" variant="secondary">
             <Link href="/signup">Join the Community</Link>
           </Button>

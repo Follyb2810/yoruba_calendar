@@ -1,17 +1,17 @@
 import BackButton from "@/components/shared/BackButton";
+import TicketPurchasePanel from "@/components/festivals/TicketPurchasePanel";
 import { formatYorubaDate } from "@/utils/formatDate";
+import { getBaseUrl } from "@/utils/getBaseUrl";
 import type { Festival } from "@/types/types";
 import { notFound } from "next/navigation";
-import { headers } from "next/headers";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { CalendarDays, ExternalLink, MapPin, Video } from "lucide-react";
 
 async function getFestival(id: string): Promise<Festival | null> {
-  const headersList = await headers();
-  const host = headersList.get("host") ?? "localhost:3000";
-  const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? `${protocol}://${host}`;
-
+  const baseUrl = await getBaseUrl();
   const res = await fetch(`${baseUrl}/api/festivals/${id}`, {
-    cache: "no-store",
+    next: { revalidate: 60 },
   });
 
   if (!res.ok) return null;
@@ -31,51 +31,81 @@ export default async function FestivalDetails({
 
   const startDate = formatYorubaDate(new Date(festival.startDate));
   const endDate = formatYorubaDate(new Date(festival.endDate));
+  const heroImage = festival.banner ?? festival.image;
 
   return (
-    <section className="max-w-4xl mx-auto px-6 py-16">
+    <section className="max-w-4xl mx-auto px-4 py-10">
       <BackButton />
-      <div className="bg-linear-to-r from-yellow-50 to-yellow-100 rounded-2xl shadow-lg p-8 hover:shadow-2xl transition-shadow mt-4">
-        <h1 className="text-4xl font-bold mb-4 text-center">{festival.title}</h1>
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
-          <div className="bg-white p-4 rounded-xl shadow-md flex-1 text-center">
-            <h2 className="font-semibold text-lg text-gray-600">Start Date</h2>
-            <p className="text-xl font-medium text-gray-800 mt-1">{startDate}</p>
+
+      {heroImage && (
+        <div className="mt-4 aspect-[21/9] rounded-2xl overflow-hidden bg-muted">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={heroImage}
+            alt=""
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
+
+      <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-2xl shadow-sm border p-6 md:p-8 mt-4 space-y-6">
+        <div className="text-center space-y-3">
+          <div className="flex flex-wrap justify-center gap-2">
+            <Badge className="bg-orange-500">{festival.orisa.name}</Badge>
+            {festival.isEnded && <Badge variant="secondary">Ended</Badge>}
+            <Badge variant="outline">
+              {festival.eventType === "virtual" ? "Virtual" : "In person"}
+            </Badge>
           </div>
-          <div className="bg-white p-4 rounded-xl shadow-md flex-1 text-center">
-            <h2 className="font-semibold text-lg text-gray-600">End Date</h2>
-            <p className="text-xl font-medium text-gray-800 mt-1">{endDate}</p>
+          <h1 className="text-3xl md:text-4xl font-bold">{festival.title}</h1>
+        </div>
+
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div className="bg-white p-4 rounded-xl border text-center">
+            <p className="text-sm text-muted-foreground flex items-center justify-center gap-1">
+              <CalendarDays className="h-4 w-4" /> Starts
+            </p>
+            <p className="font-medium mt-1">{startDate}</p>
+          </div>
+          <div className="bg-white p-4 rounded-xl border text-center">
+            <p className="text-sm text-muted-foreground flex items-center justify-center gap-1">
+              <CalendarDays className="h-4 w-4" /> Ends
+            </p>
+            <p className="font-medium mt-1">{endDate}</p>
           </div>
         </div>
-        <div className="text-center mt-4">
-          <span className="inline-block bg-yellow-200 text-yellow-800 text-sm px-4 py-2 rounded-full font-medium">
-            Orisa: {festival.orisa.name}
-          </span>
-        </div>
-        {festival.location && (
-          <p className="mt-4 text-center text-gray-600">
-            📍 {festival.location}, {festival.country}
+
+        {festival.eventType === "physical" && festival.location && (
+          <p className="text-center text-muted-foreground flex items-center justify-center gap-2">
+            <MapPin className="h-4 w-4 shrink-0" />
+            {festival.location}, {festival.country}
           </p>
         )}
-        <p className="mt-6 text-gray-700 text-center text-lg leading-relaxed">
+
+        {festival.eventType === "virtual" && festival.eventLink && (
+          <div className="text-center">
+            <Button asChild variant="outline" className="gap-2">
+              <a href={festival.eventLink} target="_blank" rel="noopener noreferrer">
+                <Video className="h-4 w-4" />
+                Join online
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            </Button>
+          </div>
+        )}
+
+        <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
           {festival.description}
         </p>
+
         {festival.tickets && festival.tickets.length > 0 && (
-          <div className="mt-8 bg-white rounded-xl p-6 shadow-md">
-            <h3 className="font-semibold text-lg mb-4 text-center">Tickets</h3>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {festival.tickets.map((t) => (
-                <div key={t.id} className="border rounded-lg p-4 text-center">
-                  <p className="font-medium">{t.name}</p>
-                  <p className="text-orange-600 font-semibold mt-1">
-                    {t.isFree ? "Free" : `₦${t.price?.toLocaleString()}`}
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {t.quantity - t.sold} remaining
-                  </p>
-                </div>
-              ))}
-            </div>
+          <div className="bg-white rounded-xl p-6 border space-y-4">
+            <h2 className="font-semibold text-lg text-center">Get Tickets</h2>
+            <TicketPurchasePanel
+              festivalId={festival.id}
+              isEnded={festival.isEnded}
+              tickets={festival.tickets}
+            />
           </div>
         )}
       </div>

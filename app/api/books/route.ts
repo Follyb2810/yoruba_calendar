@@ -1,33 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/utils/prisma-client";
-import { BookStatus } from "@/generated/prisma";
-import { requireRole } from "@/utils/requireRole";
+import { bookService } from "@/module/Book/book.service";
+import { requireCreator, requireAdmin } from "@/utils/requireRole";
 import { createBookSchema } from "@/helpers/zod/book.schema";
 import { jsonError, jsonServerError } from "@/utils/api-response";
-import { serializeBook } from "@/utils/serializeBook";
 
-// GET /api/books?search=
+// GET /api/books?search=&mine=true&admin=true
 export async function GET(req: NextRequest) {
   const search = req.nextUrl.searchParams.get("search") ?? "";
+  const mine = req.nextUrl.searchParams.get("mine") === "true";
+  const adminAll = req.nextUrl.searchParams.get("admin") === "true";
 
   try {
-    const books = await prisma.book.findMany({
-      where: {
-        status: BookStatus.PUBLISHED,
-        ...(search ? { title: { contains: search } } : {}),
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    if (adminAll) {
+      const { error } = await requireAdmin();
+      if (error) return error;
+      const books = await bookService.getAllBooks(search);
+      return NextResponse.json({ books });
+    }
 
-    return NextResponse.json({ books: books.map(serializeBook) });
+    if (mine) {
+      const { session, error } = await requireCreator();
+      if (error) return error;
+      const books = await bookService.getUserBooks(session!.user.id);
+      return NextResponse.json({ books });
+    }
+
+    const books = await bookService.getPublicBooks(search);
+    return NextResponse.json({ books });
   } catch {
     return jsonServerError("Failed to fetch books");
   }
 }
 
-// POST /api/books — admin only
+// POST /api/books — creators only
 export async function POST(req: NextRequest) {
-  const { session, error } = await requireRole(["ADMIN", "SUPERADMIN"]);
+  const { session, error } = await requireCreator();
   if (error) return error;
 
   try {
@@ -38,15 +45,8 @@ export async function POST(req: NextRequest) {
       return jsonError(parsed.error.issues[0]?.message ?? "Invalid input", 400);
     }
 
-    const book = await prisma.book.create({
-      data: {
-        ...parsed.data,
-        coverImage: parsed.data.coverImage || null,
-        userId: session!.user.id,
-      },
-    });
-
-    return NextResponse.json({ book: serializeBook(book) }, { status: 201 });
+    const book = await bookService.createBook(parsed.data, session!.user.id);
+    return NextResponse.json({ book }, { status: 201 });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to create book";
     return jsonError(message, 400);

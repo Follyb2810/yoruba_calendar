@@ -28,6 +28,8 @@ export const createFestivalSchema = z
     ticketType: z.enum(["single", "group"]),
     status: z.enum(["DRAFT", "PUBLISHED"]).default("DRAFT"),
     tickets: z.array(ticketInputSchema).optional(),
+    image: z.string().url().optional().or(z.literal("")),
+    banner: z.string().url().optional().or(z.literal("")),
   })
   .refine(
     (data) => (data.eventType === "physical" ? !!data.location : true),

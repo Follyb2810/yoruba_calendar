@@ -6,6 +6,7 @@ import {
 } from "./festival.types";
 import { Festival, FestivalStatus, Prisma } from "@/generated/prisma";
 import { combineDateAndTime, isFestivalEnded } from "@/utils/formatDate";
+import { canManageResource } from "@/utils/rbac";
 import type { CreateFestivalInput } from "@/helpers/zod/festival-api.schema";
 import type { TicketInput } from "./festival.repository";
 
@@ -38,8 +39,8 @@ export class FestivalService {
       endTime: input.endTime ?? null,
       ticketType: input.ticketType,
       status: (input.status ?? "DRAFT") as FestivalStatus,
-      image: null,
-      banner: null,
+      image: input.image ?? null,
+      banner: input.banner ?? null,
     };
   }
 
@@ -105,27 +106,38 @@ export class FestivalService {
     }
   }
 
+  private assertCanManage(
+    ownerId: string,
+    user: { id: string; roles: string[] }
+  ) {
+    if (!canManageResource(user, ownerId)) {
+      throw new Error("You are not allowed to manage this festival");
+    }
+  }
+
   async updateFestival(
     id: number,
     data: TFestivalUpdate,
-    userId: string
+    user: { id: string; roles: string[] }
   ): Promise<FestivalWithInclude> {
     const festival = await this.getFestivalById(id);
-    if (festival.userId !== userId) {
-      throw new Error("You are not allowed to update this festival");
-    }
+    this.assertCanManage(festival.userId, user);
     return this.festivalRepository.updateFestival(id, data);
   }
 
-  async publishFestival(id: number, userId: string): Promise<FestivalWithInclude> {
-    return this.updateFestival(id, { status: FestivalStatus.PUBLISHED }, userId);
+  async publishFestival(
+    id: number,
+    user: { id: string; roles: string[] }
+  ): Promise<FestivalWithInclude> {
+    return this.updateFestival(id, { status: FestivalStatus.PUBLISHED }, user);
   }
 
-  async deleteFestival(id: number, userId: string): Promise<void> {
+  async deleteFestival(
+    id: number,
+    user: { id: string; roles: string[] }
+  ): Promise<void> {
     const festival = await this.getFestivalById(id);
-    if (festival.userId !== userId) {
-      throw new Error("You are not allowed to delete this festival");
-    }
+    this.assertCanManage(festival.userId, user);
     await this.festivalRepository.deleteFestival(id);
   }
 }

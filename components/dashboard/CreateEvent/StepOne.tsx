@@ -14,6 +14,7 @@ import { EventFormData } from "@/types/types";
 import { zodFormikValidate } from "@/utils/zodFormik";
 import { stepOneSchema } from "@/helpers/zod/event.schema";
 import { Label } from "@/components/ui/label";
+import ImageUpload from "@/components/shared/ImageUpload";
 
 export type TOrisa = { id: number; name: string };
 
@@ -95,6 +96,21 @@ export function StepOne({ data, setData, onNext }: StepWithNextProps) {
             {touched.orishaId && errors.orishaId && (
               <p className="text-sm text-red-500">{errors.orishaId}</p>
             )}
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-6 pt-2">
+            <ImageUpload
+              label="Event poster (optional)"
+              value={data.image ?? ""}
+              onChange={(url) => setData((prev) => ({ ...prev, image: url }))}
+              folder="yoruba_calendar/events/posters"
+            />
+            <ImageUpload
+              label="Banner image (optional)"
+              value={data.banner ?? ""}
+              onChange={(url) => setData((prev) => ({ ...prev, banner: url }))}
+              folder="yoruba_calendar/events/banners"
+            />
           </div>
 
           <div className="flex justify-end pt-4">

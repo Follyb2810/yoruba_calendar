@@ -4,13 +4,23 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, Loader2, Truck, MapPin } from "lucide-react";
+
+type FulfillmentInfo = {
+  method: "DELIVERY" | "PICKUP";
+  label: string;
+  deliveryAddress?: string | null;
+  deliveryCity?: string | null;
+  deliveryPhone?: string | null;
+  pickupLocation?: string | null;
+};
 
 function PaymentVerifyInner() {
   const searchParams = useSearchParams();
   const reference = searchParams.get("reference");
   const [status, setStatus] = useState<"loading" | "success" | "failed">("loading");
   const [bookTitle, setBookTitle] = useState("");
+  const [fulfillment, setFulfillment] = useState<FulfillmentInfo | null>(null);
 
   useEffect(() => {
     if (!reference) {
@@ -24,6 +34,7 @@ function PaymentVerifyInner() {
         if (data.status === "success") {
           setStatus("success");
           setBookTitle(data.book?.title ?? "");
+          setFulfillment(data.fulfillment ?? null);
         } else {
           setStatus("failed");
         }
@@ -42,14 +53,39 @@ function PaymentVerifyInner() {
 
   if (status === "success") {
     return (
-      <div className="text-center py-20 space-y-4 max-w-md mx-auto">
+      <div className="text-center py-20 space-y-4 max-w-md mx-auto px-4">
         <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
-        <h1 className="text-2xl font-bold">Payment Successful!</h1>
+        <h1 className="text-2xl font-bold">Order confirmed!</h1>
         {bookTitle && (
           <p className="text-muted-foreground">
-            You purchased <strong>{bookTitle}</strong>. Check your email for details.
+            Your physical copy of <strong>{bookTitle}</strong> is on the way.
           </p>
         )}
+        {fulfillment && (
+          <div className="text-left border rounded-lg p-4 bg-muted/30 text-sm space-y-2">
+            <p className="font-medium flex items-center gap-2">
+              {fulfillment.method === "DELIVERY" ? (
+                <Truck className="h-4 w-4 text-orange-500" />
+              ) : (
+                <MapPin className="h-4 w-4 text-orange-500" />
+              )}
+              {fulfillment.label}
+            </p>
+            {fulfillment.method === "DELIVERY" && (
+              <p className="text-muted-foreground">
+                {fulfillment.deliveryAddress}, {fulfillment.deliveryCity}
+                <br />
+                Phone: {fulfillment.deliveryPhone}
+              </p>
+            )}
+            {fulfillment.method === "PICKUP" && fulfillment.pickupLocation && (
+              <p className="text-muted-foreground">{fulfillment.pickupLocation}</p>
+            )}
+          </div>
+        )}
+        <p className="text-xs text-muted-foreground">
+          A confirmation email has been sent. The seller will contact you about delivery or pickup.
+        </p>
         <Button asChild className="bg-orange-500 hover:bg-orange-600">
           <Link href="/books">Continue Shopping</Link>
         </Button>

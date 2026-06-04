@@ -26,6 +26,19 @@ enum OrderStatus {
   FAILED
 }
 
+enum FulfillmentMethod {
+  DELIVERY
+  PICKUP
+}
+
+enum PayoutStatus {
+  PENDING     // awaiting fulfillment or bank setup
+  PROCESSING  // Paystack transfer initiated
+  COMPLETED   // creator paid
+  FAILED
+  SKIPPED     // free order
+}
+
 // USERS + ROLES
 
 model User {
@@ -37,12 +50,20 @@ model User {
   image            String?
   twoFactorEnabled Boolean   @default(false)
 
+  // Paystack Transfer recipient for creator payouts
+  paystackRecipientCode String?
+  payoutBankCode        String?
+  payoutBankName        String?
+  payoutAccountName     String?
+  payoutAccountLast4    String?
+
   roles     UserRole[]
   festivals Festival[]
   orisas    Orisa[]
   tickets   Ticket[]
   books     Book[]
   bookOrders BookOrder[]
+  ticketOrders TicketOrder[]
 
   accounts Account[]
   sessions Session[]
@@ -111,6 +132,7 @@ model Festival {
   // Step 3: Tickets
   ticketType String // "single" | "group"
   tickets    Ticket[]
+  ticketOrders TicketOrder[]
 
   image  String? // could store path or URL
   banner String? // could store path or URL
@@ -135,6 +157,41 @@ model Ticket {
   maxPerGroup Int? // max tickets per person/group
   sold        Int     @default(0) // track how many tickets sold
 
+  orders TicketOrder[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TicketOrder {
+  id                Int         @id @default(autoincrement())
+  ticketId          Int
+  ticket            Ticket      @relation(fields: [ticketId], references: [id])
+  festivalId        Int
+  festival          Festival    @relation(fields: [festivalId], references: [id])
+  userId            String
+  user              User        @relation(fields: [userId], references: [id])
+  quantity          Int         @default(1)
+  amount            Int         // amount in kobo (0 for free)
+  paystackReference String      @unique
+  status            OrderStatus @default(PENDING)
+  buyerPhone        String?
+
+  sellerAcknowledgedAt DateTime?
+
+  fulfilledAt DateTime? // organizer marked complete (buyer attended / ticket honored)
+
+  payoutStatus              PayoutStatus @default(PENDING)
+  creatorPayoutAmount       Int?         // kobo sent to creator
+  platformFeeAmount         Int?
+  paystackTransferReference String?      @unique
+  payoutCompletedAt         DateTime?
+
+  feedbackToken     String?   @unique
+  buyerRating       Int?      // 1–5 satisfaction
+  buyerComment      String?
+  buyerFeedbackAt   DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -148,9 +205,14 @@ model Book {
   author      String
   price       Float      // price in NGN
   currency    String     @default("NGN")
-  coverImage  String?
+  coverImage  String?   // front cover photo only (not the book file)
+  backImage   String?   // back cover photo (optional)
   stock       Int        @default(0)
   status      BookStatus @default(DRAFT)
+
+  allowsDelivery  Boolean @default(true)
+  allowsPickup    Boolean @default(true)
+  pickupLocation  String? // where buyers can collect (city/address)
 
   userId String
   user   User   @relation(fields: [userId], references: [id])
@@ -168,8 +230,27 @@ model BookOrder {
   userId            String
   user              User        @relation(fields: [userId], references: [id])
   amount            Int         // amount in kobo
-  paystackReference String      @unique
-  status            OrderStatus @default(PENDING)
+  paystackReference String            @unique
+  status            OrderStatus       @default(PENDING)
+  fulfillmentMethod FulfillmentMethod @default(PICKUP)
+  deliveryAddress   String?
+  deliveryCity      String?
+  deliveryPhone     String?
+  pickupLocation    String?
+
+  sellerAcknowledgedAt DateTime? // null = new order notification for seller
+  fulfilledAt          DateTime? // seller marked order complete (book delivered / event served)
+
+  payoutStatus              PayoutStatus @default(PENDING)
+  creatorPayoutAmount       Int?
+  platformFeeAmount         Int?
+  paystackTransferReference String?      @unique
+  payoutCompletedAt         DateTime?
+
+  feedbackToken     String?   @unique
+  buyerRating       Int?
+  buyerComment      String?
+  buyerFeedbackAt   DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

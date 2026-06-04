@@ -2,65 +2,126 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { formatYorubaDate } from "@/utils/formatDate";
 import type { Festival } from "@/types/types";
+import { CalendarDays, MapPin, Search, Video } from "lucide-react";
 
 export default function FestivalsPage() {
   const [festivals, setFestivals] = useState<Festival[]>([]);
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchFestivals() {
+      setLoading(true);
+      setError(null);
       try {
-        const res = await fetch("/api/festivals?limit=50");
+        const q = search ? `?search=${encodeURIComponent(search)}` : "";
+        const res = await fetch(`/api/festivals${q}`);
         if (!res.ok) throw new Error("Failed to fetch festivals");
         const data = await res.json();
-        setFestivals(data.festivals);
+        setFestivals(data.festivals ?? []);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Something went wrong");
       } finally {
         setLoading(false);
       }
     }
-    fetchFestivals();
-  }, []);
 
-  if (loading) {
-    return <p className="text-center py-10">Loading festivals…</p>;
-  }
-  if (error) {
-    return <p className="text-center py-10 text-red-500">Error: {error}</p>;
-  }
+    const timer = setTimeout(fetchFestivals, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   return (
-    <section className="max-w-5xl mx-auto px-6 py-16 space-y-16">
-      <div className="text-center space-y-2">
+    <section className="max-w-6xl mx-auto px-4 py-10">
+      <div className="mb-8">
         <h1 className="text-3xl font-bold">Yoruba Festivals</h1>
-        <p className="text-muted-foreground">
-          Celebrations honoring the Orisa and our shared heritage
+        <p className="text-muted-foreground mt-1">
+          Browse community events — no account needed
         </p>
       </div>
-      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
-        {festivals.map((f) => (
-          <Link key={f.id} href={`/festivals/${f.id}`}>
-            <section className="block border rounded-xl p-5 shadow-md hover:shadow-lg transition-shadow bg-white h-full">
-              <h2 className="text-xl font-semibold mb-2">{f.title}</h2>
-              <p className="text-gray-700 mb-1 text-sm">
-                <span className="font-medium">Start:</span>{" "}
-                {formatYorubaDate(new Date(f.startDate))}
-              </p>
-              <p className="text-gray-700 mb-3 text-sm">
-                <span className="font-medium">End:</span>{" "}
-                {formatYorubaDate(new Date(f.endDate))}
-              </p>
-              <span className="inline-block bg-yellow-200 text-yellow-800 text-sm px-3 py-1 rounded-full">
-                {f.orisa.name}
-              </span>
-            </section>
-          </Link>
-        ))}
+
+      <div className="relative max-w-md mb-8">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search festivals…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9"
+        />
       </div>
+
+      {loading ? (
+        <p className="text-center py-16 text-muted-foreground">Loading festivals…</p>
+      ) : error ? (
+        <p className="text-center py-16 text-red-500">{error}</p>
+      ) : festivals.length === 0 ? (
+        <div className="text-center py-16 border rounded-xl bg-muted/20">
+          <CalendarDays className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+          <p className="text-muted-foreground">No published festivals yet.</p>
+          <Button asChild variant="link" className="mt-2 text-orange-600">
+            <Link href="/signin?callbackUrl=/dashboard/become-creator">
+              Sign in to publish an event
+            </Link>
+          </Button>
+        </div>
+      ) : (
+        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          {festivals.map((f) => (
+            <Link
+              key={f.id}
+              href={`/festivals/${f.id}`}
+              className="group border rounded-xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow"
+            >
+              <div className="aspect-[16/9] bg-gradient-to-br from-yellow-50 to-orange-100 overflow-hidden">
+                {f.banner || f.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={f.banner ?? f.image ?? ""}
+                    alt=""
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <CalendarDays className="h-12 w-12 text-orange-300" />
+                  </div>
+                )}
+              </div>
+              <div className="p-4 space-y-2">
+                <div className="flex flex-wrap gap-1.5">
+                  <Badge variant="outline" className="text-[10px]">
+                    {f.orisa.name}
+                  </Badge>
+                  {f.isEnded && (
+                    <Badge variant="secondary" className="text-[10px]">
+                      Ended
+                    </Badge>
+                  )}
+                  {f.eventType === "virtual" && (
+                    <Badge variant="outline" className="text-[10px] gap-0.5">
+                      <Video className="h-2.5 w-2.5" /> Virtual
+                    </Badge>
+                  )}
+                </div>
+                <h2 className="font-semibold line-clamp-2 leading-snug">{f.title}</h2>
+                <p className="text-xs text-muted-foreground">
+                  {formatYorubaDate(new Date(f.startDate))}
+                  {f.location && (
+                    <span className="flex items-center gap-1 mt-1">
+                      <MapPin className="h-3 w-3" />
+                      {f.location}
+                    </span>
+                  )}
+                </p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

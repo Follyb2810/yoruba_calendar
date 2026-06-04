@@ -63,8 +63,109 @@ Open [http://localhost:3000](http://localhost:3000).
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth (optional) |
 | `GITHUB_ID` / `GITHUB_SECRET` | GitHub OAuth (optional) |
 | `TWITTER_ID` / `TWITTER_SECRET` | Twitter OAuth (optional) |
-| `JWT_SECRET` | Mobile API token signing (defaults to NEXTAUTH_SECRET) |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Seed admin account (optional) |
+| `PAYSTACK_SECRET_KEY` | Paystack secret key for book & ticket payments |
+| `RESEND_API_KEY` | Resend API key for order confirmation emails |
+| `EMAIL_FROM` | Sender address for transactional email |
+| `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | Image uploads for books & events |
+| `OWNER_EMAIL` | Your email — auto-grants SUPERADMIN + ADMIN + CREATOR on sign-in |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Dev seed admin account (defaults below) |
+
+## Roles & access
+
+### Platform owner (you)
+
+1. Add your email to `.env`:
+   ```bash
+   OWNER_EMAIL=you@example.com
+   ```
+2. Sign up or sign in with Google (or email) using that address.
+3. On sign-in, you automatically receive **SUPERADMIN**, **ADMIN**, **CREATOR**, and **MODERATOR** roles.
+4. Open **Dashboard → Team** to grant roles to other users.
+
+For local dev without Google, the seed also creates an admin account using `OWNER_EMAIL` (or `ADMIN_EMAIL`).
+
+### Upgrade someone to Creator
+
+**Self-service (any member):** Dashboard → **Become Creator** → Activate Creator Access.
+
+**Admin grant:** Dashboard → **Team** → enter their email → role **CREATOR** → Grant.  
+(They must have signed up first.)
+
+**Admins** can grant Creator and Moderator. **SUPERADMIN** (platform owner) can also grant Admin roles.
+
+### Book order notifications (sellers)
+
+Creators see **Dashboard → Orders** with a badge for new paid orders (books and tickets). Expand an order for buyer contact and fulfillment details. **Email confirmations** are sent to buyers and sellers/organizers when `RESEND_API_KEY` is set (logged to console in dev without it).
+
+### Event tickets
+
+- **Paid tickets:** Paystack checkout on the festival detail page (sign-in required).
+- **Free tickets:** Instant reservation via **Reserve free ticket** (no payment).
+- Organizers see ticket orders under **Dashboard → Orders → Ticket orders**.
+
+## Payment & fulfillment lifecycle
+
+There are **two separate steps**: collecting payment, then closing the order after delivery/event.
+
+### 1. Payment (automatic — at checkout)
+
+| Step | What happens |
+|------|----------------|
+| Buyer pays on Paystack | Order created as `PENDING` |
+| Paystack confirms | Order → `SUCCESS`, stock/tickets decremented, emails sent |
+| Confirmation | Buyer redirect **or** Paystack webhook (`/api/paystack/webhook`) |
+
+**Production webhook** — In [Paystack Dashboard → Settings → Webhooks](https://dashboard.paystack.com):
+
+- URL: `https://yourdomain.com/api/paystack/webhook`
+- Events: `charge.success`, `charge.failed`, `transfer.success`, `transfer.failed`, `transfer.reversed`
+
+### 2. Fulfillment + creator payout (when order is complete)
+
+| Who | Action |
+|-----|--------|
+| **Creator** | Dashboard → **Payouts** → connect bank account (once) |
+| **Book seller** | Orders → **Mark as delivered / picked up** |
+| **Organizer** | Orders → Ticket orders → **Mark as attended / fulfilled** |
+
+On fulfill:
+1. Buyer gets email with **rate your experience** link
+2. Platform fee (`PLATFORM_FEE_PERCENT`, default 10%) is deducted
+3. Remainder is **transferred to creator's bank** via Paystack Transfer
+4. Webhook `transfer.success` marks payout **Completed**
+
+If creator has no bank account, payout stays **Pending** — connect bank under Payouts, then **Retry creator payout** on the order.
+
+### 3. Buyer satisfaction
+
+After fulfillment, buyers receive `/feedback/[token]` (also in email):
+
+- Rate **1–5 stars** + optional comment
+- Creators see ratings on **Dashboard → Orders** (`Buyer rating: 4/5`)
+
+**Awaiting buyer feedback** = fulfilled but not yet rated.
+
+
+## Public vs authenticated access
+
+| Area | Login required? |
+|------|-----------------|
+| Calendar, Orisa, Festivals list/detail | No |
+| Book shop list/detail | No |
+| Book checkout (Paystack) | Yes |
+| Creator dashboard (events, books, orders) | Yes + Creator role |
+| Team / admin roles | Yes + Admin |
+
+## Production checklist
+
+Before deploying:
+
+1. Set `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, and `NEXT_PUBLIC_BASE_URL` to your live domain.
+2. Set `OWNER_EMAIL` to your account email.
+3. Switch `prisma/schema.prisma` to PostgreSQL and run `prisma migrate deploy`.
+4. Configure Paystack live keys and Cloudinary for uploads.
+5. Set Google OAuth redirect URIs for production.
+6. Run `npm run build` and `npm start` locally to verify.
 
 ## Project Structure
 
@@ -85,18 +186,21 @@ prisma/         # Schema and migrations
 |--------|-------|------|-------------|
 | GET | `/api/festivals` | Public | List published festivals |
 | GET | `/api/festivals?mine=true&filter=` | User | List own events |
-| POST | `/api/festivals` | User | Create event |
+| POST | `/api/festivals` | Creator | Create event |
 | GET | `/api/festivals/:id` | Public* | Festival details |
 | PATCH | `/api/festivals/:id` | Owner | Update or publish |
 | DELETE | `/api/festivals/:id` | Owner | Delete event |
 | GET | `/api/orisha` | Public | List Orisas |
+| GET | `/api/books` | Public | List published books |
+| GET | `/api/books/:id` | Public* | Book details |
+| POST | `/api/paystack/initialize` | User | Start book checkout |
 
-*Draft festivals only visible to the owner.
+*Draft books only visible to owner/admin.
 
 ## Default Admin (after seed)
 
-- Email: `admin@dev.com` (or `ADMIN_EMAIL`)
-- Password: `admin1234` (or `ADMIN_PASSWORD`)
+- Email: value of `OWNER_EMAIL` or `ADMIN_EMAIL` (default `admin@dev.com`)
+- Password: `admin1234` (or `ADMIN_PASSWORD`) — email/password sign-in only
 
 ## Scripts
 

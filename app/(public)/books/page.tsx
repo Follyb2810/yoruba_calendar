@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { formatNaira } from "@/utils/serializeBook";
-import { BookOpen, Search } from "lucide-react";
+import { BookOpen, Search, Truck, MapPin } from "lucide-react";
 
 type Book = {
   id: number;
@@ -14,6 +14,8 @@ type Book = {
   price: number;
   coverImage: string | null;
   inStock: boolean;
+  allowsDelivery: boolean;
+  allowsPickup: boolean;
 };
 
 export default function BooksPage() {
@@ -45,7 +47,7 @@ export default function BooksPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Book Shop</h1>
         <p className="text-muted-foreground mt-1">
-          Yoruba culture, spirituality, and heritage — delivered to you
+          Physical Yoruba books — browse freely, sign in to order
         </p>
       </div>
 
@@ -95,6 +97,18 @@ export default function BooksPage() {
                   {!book.inStock && (
                     <Badge variant="secondary" className="text-xs">
                       Sold out
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-1 pt-1">
+                  {book.allowsDelivery && (
+                    <Badge variant="outline" className="text-[10px] gap-0.5 px-1.5">
+                      <Truck className="h-2.5 w-2.5" /> Delivery
+                    </Badge>
+                  )}
+                  {book.allowsPickup && (
+                    <Badge variant="outline" className="text-[10px] gap-0.5 px-1.5">
+                      <MapPin className="h-2.5 w-2.5" /> Pickup
                     </Badge>
                   )}
                 </div>

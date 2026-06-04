@@ -17,8 +17,8 @@ export type EventFormData = {
   dates: Date[] | [];
   startDate: string;
   endDate: string;
-  image?: File;
-  banner?: File;
+  image?: string;
+  banner?: string;
   ticketType: ITicketType;
   tickets?: {
     name: string;

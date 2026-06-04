@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createFestivalSchema } from "@/helpers/zod/festival-api.schema";
 import { festivalService } from "@/module/Festival/festival.service";
-import { requireSession } from "@/utils/requireRole";
+import { requireCreator, requireSession } from "@/utils/requireRole";
 import {
   jsonError,
   jsonServerError,
@@ -43,9 +43,9 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/festivals
+// POST /api/festivals — creators only
 export async function POST(req: NextRequest) {
-  const { session, error } = await requireSession();
+  const { session, error } = await requireCreator();
   if (error) return error;
 
   try {

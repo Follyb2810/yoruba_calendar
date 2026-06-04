@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { FestivalStatus } from "@/generated/prisma";
+import { auth } from "@/utils/auth";
 import { festivalService } from "@/module/Festival/festival.service";
-import { requireSession } from "@/utils/requireRole";
+import { requireCreator } from "@/utils/requireRole";
+import { canManageResource } from "@/utils/rbac";
 import {
   jsonError,
   jsonNotFound,
@@ -8,9 +11,8 @@ import {
 } from "@/utils/api-response";
 import { serializeFestival } from "@/utils/serializeFestival";
 import { updateFestivalSchema } from "@/helpers/zod/festival-api.schema";
-import { FestivalStatus } from "@/generated/prisma";
 
-// GET /api/festivals/:id
+// GET /api/festivals/:id — public for published events
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -19,10 +21,17 @@ export async function GET(
 
   try {
     const festival = await festivalService.getFestivalById(Number(id));
-    const { session } = await requireSession();
+    const session = await auth();
 
     if (festival.status !== FestivalStatus.PUBLISHED) {
-      if (!session || festival.userId !== session.user.id) {
+      const canViewDraft =
+        session?.user &&
+        canManageResource(
+          { id: session.user.id, roles: session.user.roles ?? [] },
+          festival.userId
+        );
+
+      if (!canViewDraft) {
         return jsonNotFound("Festival not found");
       }
     }
@@ -38,19 +47,17 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { session, error } = await requireSession();
+  const { session, error } = await requireCreator();
   if (error) return error;
 
   const { id } = await params;
+  const user = { id: session!.user.id, roles: session!.user.roles ?? [] };
 
   try {
     const body = await req.json();
 
     if (body.action === "publish") {
-      const festival = await festivalService.publishFestival(
-        Number(id),
-        session!.user.id
-      );
+      const festival = await festivalService.publishFestival(Number(id), user);
       return NextResponse.json({ festival: serializeFestival(festival) });
     }
 
@@ -63,7 +70,7 @@ export async function PATCH(
     const festival = await festivalService.updateFestival(
       Number(id),
       parsed.data as Parameters<typeof festivalService.updateFestival>[1],
-      session!.user.id
+      user
     );
     return NextResponse.json({ festival: serializeFestival(festival) });
   } catch (err) {
@@ -78,13 +85,14 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { session, error } = await requireSession();
+  const { session, error } = await requireCreator();
   if (error) return error;
 
   const { id } = await params;
+  const user = { id: session!.user.id, roles: session!.user.roles ?? [] };
 
   try {
-    await festivalService.deleteFestival(Number(id), session!.user.id);
+    await festivalService.deleteFestival(Number(id), user);
     return NextResponse.json({ message: "Festival deleted" });
   } catch (err) {
     const message =

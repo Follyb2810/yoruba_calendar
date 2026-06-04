@@ -4,6 +4,10 @@ import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/utils/prisma-client";
 import bcrypt from "bcrypt";
+import {
+  ensureDefaultUserRole,
+  ensurePlatformOwnerRoles,
+} from "@/utils/platform-owner";
 
 interface AuthUser {
   id: string;
@@ -103,18 +107,10 @@ export const { auth, handlers, signIn, signOut }: NextAuthResult = NextAuth({
           user.id = existing.id;
 
           if (existing.roles.length === 0) {
-            const userRole = await prisma.role.findUnique({
-              where: { name: "USER" },
-            });
-            if (userRole) {
-              await prisma.userRole.create({
-                data: {
-                  userId: existing.id,
-                  roleId: userRole.id,
-                },
-              });
-            }
+            await ensureDefaultUserRole(existing.id);
           }
+
+          await ensurePlatformOwnerRoles(existing.id, user.email);
         }
       }
 
@@ -146,5 +142,17 @@ export const { auth, handlers, signIn, signOut }: NextAuthResult = NextAuth({
 
   pages: {
     signIn: "/signin",
+  },
+
+  events: {
+    async createUser({ user }) {
+      if (!user.id) return;
+      await ensureDefaultUserRole(user.id);
+      await ensurePlatformOwnerRoles(user.id, user.email);
+    },
+    async signIn({ user }) {
+      if (!user.id || !user.email) return;
+      await ensurePlatformOwnerRoles(user.id, user.email);
+    },
   },
 });

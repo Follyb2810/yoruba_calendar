@@ -1,19 +1,17 @@
 import { notFound } from "next/navigation";
-import { headers } from "next/headers";
 import BackButton from "@/components/shared/BackButton";
-import BuyButton from "@/components/books/BuyButton";
+import BookPurchasePanel from "@/components/books/BookPurchasePanel";
 import { Badge } from "@/components/ui/badge";
 import { formatNaira } from "@/utils/serializeBook";
-import { BookOpen } from "lucide-react";
+import { getBaseUrl } from "@/utils/getBaseUrl";
+import { BookOpen, Truck, MapPin } from "lucide-react";
 import type { SerializedBook } from "@/utils/serializeBook";
 
 async function getBook(id: string): Promise<SerializedBook | null> {
-  const headersList = await headers();
-  const host = headersList.get("host") ?? "localhost:3000";
-  const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? `${protocol}://${host}`;
-
-  const res = await fetch(`${baseUrl}/api/books/${id}`, { cache: "no-store" });
+  const baseUrl = await getBaseUrl();
+  const res = await fetch(`${baseUrl}/api/books/${id}`, {
+    next: { revalidate: 60 },
+  });
   if (!res.ok) return null;
   const data = await res.json();
   return data.book;
@@ -34,24 +32,42 @@ export default async function BookDetailPage({
       <BackButton />
 
       <div className="mt-4 grid md:grid-cols-2 gap-8">
-        <div className="aspect-[3/4] rounded-xl overflow-hidden bg-gradient-to-br from-orange-50 to-yellow-100 flex items-center justify-center">
-          {book.coverImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={book.coverImage}
-              alt={book.title}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <BookOpen className="h-24 w-24 text-orange-300" />
+        <div className="space-y-3">
+          <div className="aspect-[3/4] rounded-xl overflow-hidden bg-gradient-to-br from-orange-50 to-yellow-100 flex items-center justify-center">
+            {book.coverImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={book.coverImage}
+                alt={`${book.title} front cover`}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <BookOpen className="h-24 w-24 text-orange-300" />
+            )}
+          </div>
+          {book.backImage && (
+            <div className="aspect-[3/4] rounded-xl overflow-hidden border bg-muted">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={book.backImage}
+                alt={`${book.title} back cover`}
+                className="w-full h-full object-cover"
+              />
+            </div>
           )}
+          <p className="text-xs text-muted-foreground text-center">
+            Cover photos · physical book
+          </p>
         </div>
 
         <div className="space-y-4">
           <div>
-            <Badge variant="outline" className="mb-2">
-              {book.inStock ? "In Stock" : "Out of Stock"}
-            </Badge>
+            <div className="flex flex-wrap gap-2 mb-2">
+              <Badge variant="outline">
+                {book.inStock ? "In Stock" : "Out of Stock"}
+              </Badge>
+              <Badge variant="secondary">Physical book</Badge>
+            </div>
             <h1 className="text-2xl md:text-3xl font-bold">{book.title}</h1>
             <p className="text-muted-foreground mt-1">by {book.author}</p>
           </div>
@@ -60,14 +76,22 @@ export default async function BookDetailPage({
             {formatNaira(book.price)}
           </p>
 
+          <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+            {book.allowsDelivery && (
+              <span className="flex items-center gap-1">
+                <Truck className="h-4 w-4" /> Delivery available
+              </span>
+            )}
+            {book.allowsPickup && (
+              <span className="flex items-center gap-1">
+                <MapPin className="h-4 w-4" /> Pickup available
+              </span>
+            )}
+          </div>
+
           <p className="text-sm leading-relaxed text-gray-700">{book.description}</p>
 
-          <div className="pt-4 space-y-2">
-            <BuyButton bookId={book.id} inStock={book.inStock} />
-            <p className="text-xs text-muted-foreground text-center">
-              Secure payment powered by Paystack
-            </p>
-          </div>
+          <BookPurchasePanel book={book} />
         </div>
       </div>
     </section>

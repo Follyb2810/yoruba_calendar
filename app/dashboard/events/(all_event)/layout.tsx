@@ -1,24 +1,40 @@
+import Link from "next/link";
+import { auth } from "@/utils/auth";
+import { isCreator } from "@/utils/rbac";
 import { LinkTabs } from "@/components/shared/LinkTabs";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import Link from "next/link";
 
-export default function EventTypeLayout({
+export default async function EventTypeLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await auth();
+  const creator = isCreator(session?.user);
+
   return (
     <section className="flex flex-col gap-6 w-full">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Events</h1>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">Events</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Manage your festival listings
+          </p>
+        </div>
 
-        <Button asChild className="bg-orange-500 hover:bg-orange-600 gap-2">
-          <Link href="/dashboard/events/new">
-            <Plus className="h-4 w-4" />
-            New Event
-          </Link>
-        </Button>
+        {creator ? (
+          <Button asChild className="bg-orange-500 hover:bg-orange-600 gap-2 shrink-0">
+            <Link href="/dashboard/events/new">
+              <Plus className="h-4 w-4" />
+              New Event
+            </Link>
+          </Button>
+        ) : (
+          <Button asChild variant="outline" className="shrink-0">
+            <Link href="/dashboard/become-creator">Become Creator</Link>
+          </Button>
+        )}
       </div>
 
       <LinkTabs

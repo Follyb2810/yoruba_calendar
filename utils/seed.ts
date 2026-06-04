@@ -73,8 +73,11 @@ export async function runSeedIfEmpty() {
     });
   }
 
-  // Create admin user
-  const adminEmail = process.env.ADMIN_EMAIL ?? "admin@dev.com";
+  // Create admin user (dev seed account)
+  const adminEmail = (process.env.OWNER_EMAIL ?? process.env.ADMIN_EMAIL ?? "admin@dev.com")
+    .split(",")[0]
+    .trim()
+    .toLowerCase();
   const adminPassword = process.env.ADMIN_PASSWORD ?? "admin1234";
   const hashed = await bcrypt.hash(adminPassword, 10);
 
@@ -158,34 +161,91 @@ async function publishSampleFestivals() {
 async function seedSampleBook() {
   const title = "Ọ̀rìṣà: A Beginner's Guide to Yoruba Spirituality";
   const existing = await prisma.book.findFirst({ where: { title } });
-  if (existing) return;
 
   const admin = await prisma.user.findFirst({
     where: { roles: { some: { role: { name: "ADMIN" } } } },
   });
   if (!admin) return;
 
-  await prisma.book.create({
-    data: {
-      title,
-      author: "Kọ́jọ́dá Press",
-      description:
-        "An introductory guide to the Orisa, Yoruba cosmology, and cultural practices. Perfect for beginners exploring Yoruba heritage — covers major deities, festival traditions, and respectful engagement with the faith.",
-      price: 4500,
-      currency: "NGN",
-      stock: 50,
-      status: "PUBLISHED",
-      coverImage:
-        "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop",
-      userId: admin.id,
-    },
-  });
+  const bookData = {
+    title,
+    author: "Kọ́jọ́dá Press",
+    description:
+      "An introductory guide to the Orisa, Yoruba cosmology, and cultural practices. Perfect for beginners exploring Yoruba heritage — covers major deities, festival traditions, and respectful engagement with the faith.",
+    price: 4500,
+    currency: "NGN",
+    stock: 50,
+    status: "PUBLISHED" as const,
+    allowsDelivery: true,
+    allowsPickup: true,
+    pickupLocation: "Kọ́jọ́dá Cultural Centre, Ibadan, Oyo State",
+    coverImage:
+      "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop",
+    backImage:
+      "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&h=600&fit=crop",
+    userId: admin.id,
+  };
+
+  if (existing) {
+    await prisma.book.update({
+      where: { id: existing.id },
+      data: {
+        allowsDelivery: bookData.allowsDelivery,
+        allowsPickup: bookData.allowsPickup,
+        pickupLocation: bookData.pickupLocation,
+      },
+    });
+    console.log("Sample book fulfillment options updated.");
+    return;
+  }
+
+  await prisma.book.create({ data: bookData });
   console.log("Sample book seeded.");
+}
+
+async function seedSampleTickets() {
+  const admin = await prisma.user.findFirst({
+    where: { roles: { some: { role: { name: "ADMIN" } } } },
+  });
+  if (!admin) return;
+
+  const festival = await prisma.festival.findFirst({
+    where: { title: "Oshun Festival" },
+    include: { tickets: true },
+  });
+  if (!festival || festival.tickets.length > 0) return;
+
+  await prisma.ticket.createMany({
+    data: [
+      {
+        festivalId: festival.id,
+        creatorId: admin.id,
+        name: "General Admission",
+        type: "single",
+        isFree: false,
+        price: 2000,
+        quantity: 100,
+        sold: 0,
+      },
+      {
+        festivalId: festival.id,
+        creatorId: admin.id,
+        name: "Community (Free)",
+        type: "single",
+        isFree: true,
+        price: null,
+        quantity: 50,
+        sold: 0,
+      },
+    ],
+  });
+  console.log("Sample tickets seeded for Oshun Festival.");
 }
 
 runSeedIfEmpty()
   .then(() => publishSampleFestivals())
   .then(() => seedSampleBook())
+  .then(() => seedSampleTickets())
   .catch((e) => {
     console.error("Seed error:", e);
     process.exit(1);

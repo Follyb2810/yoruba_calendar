@@ -62,11 +62,20 @@ export default function CreateEventForm() {
           ticketType: merged.ticketType,
           status,
           tickets: merged.tickets,
+          image: merged.image || undefined,
+          banner: merged.banner || undefined,
         }),
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create event");
+      if (!res.ok) {
+        if (res.status === 403) {
+          toast.error("Creator access required");
+          router.push("/dashboard/become-creator");
+          return;
+        }
+        throw new Error(data.error || "Failed to create event");
+      }
 
       toast.success(
         status === "PUBLISHED" ? "Event published!" : "Draft saved!"

@@ -7,6 +7,7 @@ type BaseProps = {
   label: string;
   active?: boolean;
   danger?: boolean;
+  badge?: number;
 };
 
 type LinkProps = BaseProps & {
@@ -22,7 +23,7 @@ type ButtonProps = BaseProps & {
 export type ISidebarItem = LinkProps | ButtonProps;
 
 export default function SidebarItem(props: ISidebarItem) {
-  const { icon, label, active, danger } = props;
+  const { icon, label, active, danger, badge } = props;
 
   const className = cn(
     "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition cursor-pointer",
@@ -30,19 +31,29 @@ export default function SidebarItem(props: ISidebarItem) {
     danger && "text-red-500 hover:bg-red-50"
   );
 
+  const content = (
+    <>
+      {icon}
+      <span className="flex-1">{label}</span>
+      {badge != null && badge > 0 && (
+        <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 rounded-full bg-orange-500 text-white text-[10px] font-bold flex items-center justify-center">
+          {badge > 99 ? "99+" : badge}
+        </span>
+      )}
+    </>
+  );
+
   if ("href" in props) {
     return (
       <Link href={props.href!} className={className}>
-        {icon}
-        <span>{label}</span>
+        {content}
       </Link>
     );
   }
 
   return (
     <div onClick={props.onClick} className={className}>
-      {icon}
-      <span>{label}</span>
+      {content}
     </div>
   );
 }
