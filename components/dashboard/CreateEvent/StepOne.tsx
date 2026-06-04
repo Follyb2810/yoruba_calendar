@@ -45,12 +45,11 @@ export function StepOne({ data, setData, onNext }: StepWithNextProps) {
       validate={zodFormikValidate(stepOneSchema)}
       validateOnMount
       onSubmit={(values) => {
-        console.log({ values });
         setData((prev) => ({ ...prev, ...values }));
         onNext();
       }}
     >
-      {({ errors, touched, isValid, setFieldValue }) => (
+      {({ errors, touched, isValid, setFieldValue, values }) => (
         <Form className="space-y-6">
           <div className="space-y-1">
             <Label htmlFor="name">Event Name</Label>
@@ -80,7 +79,7 @@ export function StepOne({ data, setData, onNext }: StepWithNextProps) {
               onValueChange={(value) =>
                 setFieldValue("orishaId", Number(value))
               }
-              value={data.orishaId ? String(data.orishaId) : undefined}
+              value={values.orishaId ? String(values.orishaId) : undefined}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Choose Orisa" />

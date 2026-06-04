@@ -10,6 +10,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:push": "prisma db push",
+    "db:local": "prisma db push && npm run seeder",
     "prisma:studio": "prisma studio",
     "prisma:reset": "prisma reset",
     "postinstall": "prisma generate",
@@ -17,11 +18,12 @@
     "seed": "npx ts-node prisma/seed.ts",
     "seed_bs": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts",
     "seed_db": "ts-node --project tsconfig.local.json prisma/seed.ts",
-    "seeder": "npx ts-node ./utils/seed.ts"
+    "seeder": "ts-node --project tsconfig.local.json utils/seed.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
     "@prisma/adapter-better-sqlite3": "^7.0.1",
+    "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.1.0",
     "@prisma/extension-accelerate": "^3.0.1",
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -33,6 +35,7 @@
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.13",
     "bcrypt": "^6.0.0",
+    "better-sqlite3": "^12.10.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dotenv": "^17.2.3",

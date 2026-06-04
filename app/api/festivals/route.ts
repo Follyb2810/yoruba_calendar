@@ -1,68 +1,74 @@
-import { prisma } from "@/utils/prisma-client";
 import { NextRequest, NextResponse } from "next/server";
+import { createFestivalSchema } from "@/helpers/zod/festival-api.schema";
+import { festivalService } from "@/module/Festival/festival.service";
+import { requireSession } from "@/utils/requireRole";
+import {
+  jsonError,
+  jsonServerError,
+  jsonUnauthorized,
+} from "@/utils/api-response";
+import { serializeFestival } from "@/utils/serializeFestival";
 
-//  const session = await requireRole(["USER", "VERIFIED", "ADMIN"]);
-// GET /api/festivals?skip=0&limit=10&search=Sango
+// GET /api/festivals?search=&filter=all|published|drafts|ended&mine=true
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const skip = Number(searchParams.get("skip") || 0);
-  const limit = Number(searchParams.get("limit") || 10);
   const search = searchParams.get("search") || "";
+  const filter = (searchParams.get("filter") || "all") as
+    | "all"
+    | "published"
+    | "drafts"
+    | "ended";
+  const mine = searchParams.get("mine") === "true";
 
   try {
-    const festivals = await prisma.festival.findMany({
-      where: { title: { contains: search } },
-      include: { orisa: true },
-      skip,
-      take: limit,
+    if (mine) {
+      const { session, error } = await requireSession();
+      if (error) return error;
+
+      const festivals = await festivalService.getUserFestivals(
+        session!.user.id,
+        filter
+      );
+      return NextResponse.json({
+        festivals: festivals.map(serializeFestival),
+      });
+    }
+
+    const festivals = await festivalService.getPublicFestivals(search);
+    return NextResponse.json({
+      festivals: festivals.map(serializeFestival),
     });
-    return NextResponse.json({ festivals });
   } catch {
-    return NextResponse.json(
-      { error: "Failed to fetch Festivals" },
-      { status: 500 }
-    );
+    return jsonServerError("Failed to fetch festivals");
   }
 }
 
 // POST /api/festivals
 export async function POST(req: NextRequest) {
-  const data = await req.json();
-  // if (!session?.user?.id) {
-  //   return NextResponse.json(
-  //     { error: "You must be logged in to create a festival" },
-  //     { status: 401 }
-  //   );
-  // }
-  // Convert to Date objects
-  const startDate = new Date(
-    data.startYear,
-    data.startMonth - 1,
-    data.startDay
-  );
-  const endDate = new Date(data.endYear, data.endMonth - 1, data.endDay);
-
-  // Validate dates
-  if (endDate < startDate) {
-    return NextResponse.json(
-      { error: "End date cannot be before start date." },
-      { status: 400 }
-    );
-  }
+  const { session, error } = await requireSession();
+  if (error) return error;
 
   try {
-    const festival = await prisma.festival.create({
-      data: {
-        ...data,
-        // userId: session.user.id,q
-      },
-    });
-    return NextResponse.json({ festival }, { status: 201 });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json(
-      { error: "Failed to create Festival" },
-      { status: 500 }
+    const body = await req.json();
+    const parsed = createFestivalSchema.safeParse(body);
+
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? "Invalid input";
+      return jsonError(message, 400);
+    }
+
+    const festival = await festivalService.createFestival(
+      parsed.data,
+      session!.user.id
     );
+
+    return NextResponse.json(
+      { festival: serializeFestival(festival) },
+      { status: 201 }
+    );
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Failed to create festival";
+    return jsonError(message, 400);
   }
 }

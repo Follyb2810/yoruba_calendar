@@ -122,16 +122,17 @@ export async function runSeedIfEmpty() {
     await prisma.festival.create({
       data: {
         title: f.title,
-        description: `${f.title} description`,
-        location: "",
+        description: `Annual celebration honoring ${f.orisaName}, featuring traditional ceremonies, music, and community gathering.`,
+        location: "Nigeria",
         userId: admin.id,
         orisaId: orisaMap[f.orisaName],
         country: "Nigeria",
         eventType: "physical",
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        timezone: "Africa/Lagos",
         startDate,
         endDate,
-        ticketType: "free",
+        ticketType: "single",
+        status: "PUBLISHED",
       },
     });
   }
@@ -139,12 +140,56 @@ export async function runSeedIfEmpty() {
   console.log("Seeding completed!");
 }
 
-// Uncomment to run manually
-// runSeedIfEmpty()
-//   .catch((e) => {
-//     console.error("Seed error:", e);
-//     process.exit(1);
-//   })
-//   .finally(async () => {
-//     await prisma.$disconnect();
-//   });
+async function publishSampleFestivals() {
+  const sampleTitles = [
+    "Olokun Festival",
+    "Oshun Festival",
+    "Sango Festival",
+  ];
+  const { count } = await prisma.festival.updateMany({
+    where: { title: { in: sampleTitles }, status: "DRAFT" },
+    data: { status: "PUBLISHED" },
+  });
+  if (count > 0) {
+    console.log(`Published ${count} sample festival(s).`);
+  }
+}
+
+async function seedSampleBook() {
+  const title = "Ọ̀rìṣà: A Beginner's Guide to Yoruba Spirituality";
+  const existing = await prisma.book.findFirst({ where: { title } });
+  if (existing) return;
+
+  const admin = await prisma.user.findFirst({
+    where: { roles: { some: { role: { name: "ADMIN" } } } },
+  });
+  if (!admin) return;
+
+  await prisma.book.create({
+    data: {
+      title,
+      author: "Kọ́jọ́dá Press",
+      description:
+        "An introductory guide to the Orisa, Yoruba cosmology, and cultural practices. Perfect for beginners exploring Yoruba heritage — covers major deities, festival traditions, and respectful engagement with the faith.",
+      price: 4500,
+      currency: "NGN",
+      stock: 50,
+      status: "PUBLISHED",
+      coverImage:
+        "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop",
+      userId: admin.id,
+    },
+  });
+  console.log("Sample book seeded.");
+}
+
+runSeedIfEmpty()
+  .then(() => publishSampleFestivals())
+  .then(() => seedSampleBook())
+  .catch((e) => {
+    console.error("Seed error:", e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

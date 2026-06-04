@@ -22,13 +22,12 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await auth();
-  console.log({ session: JSON.stringify(session, null, 2) });
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AuthContext>
+        <AuthContext session={session}>
           {children}
           <Toaster />
         </AuthContext>

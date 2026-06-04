@@ -1,63 +1,94 @@
-import { prisma } from "@/utils/prisma-client";
 import { NextRequest, NextResponse } from "next/server";
-// await requireRole(["VERIFIED", "ADMIN"]);
+import { festivalService } from "@/module/Festival/festival.service";
+import { requireSession } from "@/utils/requireRole";
+import {
+  jsonError,
+  jsonNotFound,
+  jsonServerError,
+} from "@/utils/api-response";
+import { serializeFestival } from "@/utils/serializeFestival";
+import { updateFestivalSchema } from "@/helpers/zod/festival-api.schema";
+import { FestivalStatus } from "@/generated/prisma";
+
 // GET /api/festivals/:id
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+
   try {
-    const festival = await prisma.festival.findUnique({
-      where: { id: Number(id) },
-      include: { orisa: true },
-    });
-    if (!festival)
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    return NextResponse.json({ festival }, { status: 200 });
+    const festival = await festivalService.getFestivalById(Number(id));
+    const { session } = await requireSession();
+
+    if (festival.status !== FestivalStatus.PUBLISHED) {
+      if (!session || festival.userId !== session.user.id) {
+        return jsonNotFound("Festival not found");
+      }
+    }
+
+    return NextResponse.json({ festival: serializeFestival(festival) });
   } catch {
-    return NextResponse.json(
-      { error: "Failed to fetch Festival" },
-      { status: 500 }
-    );
+    return jsonNotFound("Festival not found");
   }
 }
 
-// PUT /api/festivals/:id
-export async function PUT(
+// PATCH /api/festivals/:id — update or publish
+export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { session, error } = await requireSession();
+  if (error) return error;
+
   const { id } = await params;
-  const data = await req.json();
+
   try {
-    const festival = await prisma.festival.update({
-      where: { id: Number(id) },
-      data,
-    });
-    return NextResponse.json(festival);
-  } catch {
-    return NextResponse.json(
-      { error: "Failed to update Festival" },
-      { status: 500 }
+    const body = await req.json();
+
+    if (body.action === "publish") {
+      const festival = await festivalService.publishFestival(
+        Number(id),
+        session!.user.id
+      );
+      return NextResponse.json({ festival: serializeFestival(festival) });
+    }
+
+    const parsed = updateFestivalSchema.safeParse(body);
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? "Invalid input";
+      return jsonError(message, 400);
+    }
+
+    const festival = await festivalService.updateFestival(
+      Number(id),
+      parsed.data as Parameters<typeof festivalService.updateFestival>[1],
+      session!.user.id
     );
+    return NextResponse.json({ festival: serializeFestival(festival) });
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Failed to update festival";
+    return jsonError(message, 400);
   }
 }
 
 // DELETE /api/festivals/:id
 export async function DELETE(
-  req: NextRequest,
-  ctx: RouteContext<"/api/festivals/[id]">
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await ctx.params;
-  // const id = Number(params.id);
+  const { session, error } = await requireSession();
+  if (error) return error;
+
+  const { id } = await params;
+
   try {
-    await prisma.festival.delete({ where: { id: Number(id) } });
+    await festivalService.deleteFestival(Number(id), session!.user.id);
     return NextResponse.json({ message: "Festival deleted" });
-  } catch {
-    return NextResponse.json(
-      { error: "Failed to delete Festival" },
-      { status: 500 }
-    );
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Failed to delete festival";
+    return jsonError(message, 400);
   }
 }

@@ -1,46 +1,56 @@
-import { prisma } from "@/utils/prisma-client";
 import { NextRequest, NextResponse } from "next/server";
+import { OrisaService } from "@/module/Orisa/orisa.service";
+import { requireRole, requireSession } from "@/utils/requireRole";
+import { jsonError, jsonServerError } from "@/utils/api-response";
 
-// GET /api/orisha?skip=0&limit=10&search=Olokun
+const orisaService = new OrisaService();
+
+// GET /api/orisha?skip=0&limit=50&search=Olokun
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const skip = Number(searchParams.get("skip") || 0);
-  const limit = Number(searchParams.get("limit") || 10);
-  const search = searchParams.get("search") || "";
+  const search = (searchParams.get("search") || "").toLowerCase();
 
   try {
-    const orisha = await prisma.orisa.findMany({
-      where: {
-        name: { contains: search },
-      },
-      include: { festivals: true },
-      skip,
-      take: limit,
-    });
-    return NextResponse.json(orisha);
-  } catch (error) {
+    let orisas = await orisaService.getAllOrisas();
+
+    if (search) {
+      orisas = orisas.filter((o) => o.name.toLowerCase().includes(search));
+    }
+
     return NextResponse.json(
-      { error: "Failed to fetch Orisas" },
-      { status: 500 }
+      orisas.map((o) => ({ id: o.id, name: o.name }))
     );
+  } catch {
+    return jsonServerError("Failed to fetch Orisas");
   }
 }
 
+// POST /api/orisha — admin/moderator only
 export async function POST(req: NextRequest) {
+  const { session, error } = await requireRole([
+    "ADMIN",
+    "MODERATOR",
+    "SUPERADMIN",
+  ]);
+  if (error) return error;
+
   try {
     const body = await req.json();
-    const { name, userId } = body;
+    const { name } = body;
 
-    if (!name) {
-      return NextResponse.json({ error: "Name is required" }, { status: 400 });
+    if (!name || typeof name !== "string") {
+      return jsonError("Name is required", 400);
     }
 
-    const orisa = await prisma.orisa.create({
-      data: { name, userId },
+    const orisa = await orisaService.createOrisa({
+      name: name.trim(),
+      userId: session!.user.id,
     });
 
-    return NextResponse.json(orisa);
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json(orisa, { status: 201 });
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Failed to create Orisa";
+    return jsonError(message, 400);
   }
 }

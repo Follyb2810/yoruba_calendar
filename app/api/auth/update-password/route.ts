@@ -1,131 +1,47 @@
-import { NextApiRequest, NextApiResponse } from "next";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/utils/prisma-client";
 import bcrypt from "bcrypt";
-import { auth } from "@/utils/auth";
+import { requireSession } from "@/utils/requireRole";
+import { jsonError, jsonNotFound } from "@/utils/api-response";
 
-interface UpdatePasswordBody {
-  currentPassword?: string;
-  newPassword: string;
-}
-export async function GET() {}
+export async function POST(req: NextRequest) {
+  const { session, error } = await requireSession();
+  if (error) return error;
 
-// export async function POST() {}
+  try {
+    const { currentPassword, newPassword } = await req.json();
 
-export async function PUT() {}
-
-export async function PATCH() {}
-
-export async function DELETE() {}
-
-export default async function POST(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  const session = await auth();
-
-  if (!session || !session.user?.id) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-
-  const { currentPassword, newPassword } = req.body as UpdatePasswordBody;
-
-  if (!newPassword || newPassword.length < 6) {
-    return res
-      .status(400)
-      .json({ error: "New password must be at least 6 characters" });
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-  });
-
-  if (!user) {
-    return res.status(404).json({ error: "User not found" });
-  }
-
-  const hasExistingPassword = !!user.password;
-
-  if (hasExistingPassword) {
-    if (!currentPassword) {
-      return res.status(400).json({ error: "Current password is required" });
+    if (!newPassword || newPassword.length < 8) {
+      return jsonError("New password must be at least 8 characters", 400);
     }
 
-    const isValid = await bcrypt.compare(currentPassword, user.password!);
-    if (!isValid) {
-      return res.status(403).json({ error: "Current password is incorrect" });
+    const user = await prisma.user.findUnique({
+      where: { id: session!.user.id },
+    });
+
+    if (!user) {
+      return jsonNotFound("User not found");
     }
+
+    if (user.password) {
+      if (!currentPassword) {
+        return jsonError("Current password is required", 400);
+      }
+      const isValid = await bcrypt.compare(currentPassword, user.password);
+      if (!isValid) {
+        return jsonError("Current password is incorrect", 403);
+      }
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword },
+    });
+
+    return NextResponse.json({ message: "Password updated successfully" });
+  } catch {
+    return jsonError("Failed to update password", 500);
   }
-
-  const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { password: hashedPassword },
-  });
-
-  return res.status(200).json({ message: "Password updated successfully" });
 }
-
-// import { NextApiRequest, NextApiResponse } from "next";
-// import { getServerSession } from "next-auth/next";
-// import { prisma } from "@/utils/prisma-client";
-// import bcrypt from "bcrypt";
-// import { authOptions } from "@/utils/auth";
-
-// interface UpdatePasswordBody {
-//   currentPassword?: string;
-//   newPassword: string;
-// }
-
-// export default async function handler(
-//   req: NextApiRequest,
-//   res: NextApiResponse
-// ) {
-//   if (req.method !== "POST") {
-//     return res.status(405).json({ error: "Method not allowed" });
-//   }
-
-//   const session = await getServerSession(req, res, authOptions);
-
-//   if (!session || !session.user?.id) {
-//     return res.status(401).json({ error: "Unauthorized" });
-//   }
-
-//   const { currentPassword, newPassword } = req.body as UpdatePasswordBody;
-
-//   if (!newPassword || newPassword.length < 6) {
-//     return res
-//       .status(400)
-//       .json({ error: "New password must be at least 6 characters" });
-//   }
-
-//   const user = await prisma.user.findUnique({
-//     where: { id: session.user.id },
-//   });
-
-//   if (!user) {
-//     return res.status(404).json({ error: "User not found" });
-//   }
-
-//   // If user has an existing password, verify currentPassword
-//   if (user.password) {
-//     if (!currentPassword) {
-//       return res.status(400).json({ error: "Current password is required" });
-//     }
-
-//     const isValid = await bcrypt.compare(currentPassword, user.password);
-//     if (!isValid) {
-//       return res.status(403).json({ error: "Current password is incorrect" });
-//     }
-//   }
-
-//   const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-//   await prisma.user.update({
-//     where: { id: user.id },
-//     data: { password: hashedPassword },
-//   });
-
-//   return res.status(200).json({ message: "Password updated successfully" });
-// }

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useSession } from "next-auth/react";
@@ -14,9 +14,10 @@ export default function Navbar() {
     { href: "/", label: "Home" },
     { href: "/calendar", label: "Calendar" },
     { href: "/festivals", label: "Festivals" },
-    { href: "/orisha", label: "Orisha" },
+    { href: "/orisha", label: "Orisa" },
+    { href: "/books", label: "Books" },
   ];
-  useEffect(() => {}, []);
+
   return (
     <nav className="border-b bg-background sticky top-0 z-50">
       <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">

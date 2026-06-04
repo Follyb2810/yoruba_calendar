@@ -1,9 +1,9 @@
-import EventCard from "@/components/dashboard/EventCard";
+import EventList from "@/components/dashboard/EventList";
 
 export default function EndedPage() {
   return (
-    <section className="flex-1 p-8">
-      <EventCard />
+    <section className="flex-1">
+      <EventList filter="ended" />
     </section>
   );
 }

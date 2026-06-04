@@ -1,6 +1,7 @@
 import { LinkTabs } from "@/components/shared/LinkTabs";
 import { Button } from "@/components/ui/button";
-import { SlidersHorizontal } from "lucide-react";
+import { Plus } from "lucide-react";
+import Link from "next/link";
 
 export default function EventTypeLayout({
   children,
@@ -8,13 +9,15 @@ export default function EventTypeLayout({
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-6 w-full p-4">
+    <section className="flex flex-col gap-6 w-full">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Events</h1>
 
-        <Button variant="outline" className="gap-2">
-          <SlidersHorizontal className="h-4 w-4" />
-          Filter
+        <Button asChild className="bg-orange-500 hover:bg-orange-600 gap-2">
+          <Link href="/dashboard/events/new">
+            <Plus className="h-4 w-4" />
+            New Event
+          </Link>
         </Button>
       </div>
 

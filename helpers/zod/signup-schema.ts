@@ -9,8 +9,8 @@ export const SignupSchema = z.object({
     .min(1, { message: "Email is required" }),
   password: z
     .string()
-    .min(8, { message: "Password must be at least 6 characters long" })
-    .max(20, { message: "Password must be at most 20 characters long" }),
+    .min(8, { message: "Password must be at least 8 characters long" })
+    .max(64, { message: "Password must be at most 64 characters long" }),
 });
 
 export const LoginSchema = z.object({

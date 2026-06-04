@@ -1,33 +1,12 @@
-interface Orisa {
-  id: number;
-  name: string;
-}
+import type { SerializedFestival } from "@/utils/serializeFestival";
 
-interface Festival {
-  id: number;
-  title: string;
-  startYear: number;
-  startMonth: number;
-  startDay: number;
-  endYear: number;
-  endMonth: number;
-  endDay: number;
-  orisa: Orisa;
-}
-
-interface FestivalsResponse {
-  festivals: Festival[];
-}
 export type ITicketType = "single" | "group";
 export type IEventType = "physical" | "virtual";
 
 export type EventFormData = {
-  // Step 1
   name: string;
   description: string;
   orishaId?: number;
-
-  // Step 2
   country: string;
   eventType: IEventType;
   location?: string;
@@ -40,8 +19,6 @@ export type EventFormData = {
   endDate: string;
   image?: File;
   banner?: File;
-
-  // Step 3
   ticketType: ITicketType;
   tickets?: {
     name: string;
@@ -52,3 +29,5 @@ export type EventFormData = {
     maxPerGroup?: number;
   }[];
 };
+
+export type { SerializedFestival as Festival };

@@ -7,7 +7,20 @@ import { stepThreeSchema } from "@/helpers/zod/event.schema";
 import { Input } from "@/components/ui/input";
 import { ITicketType } from "@/types/types";
 
-export function StepThree({ data, setData }: StepProps) {
+type StepThreeProps = StepProps & {
+  onFinish: (
+    status: "DRAFT" | "PUBLISHED",
+    data?: Pick<import("@/types/types").EventFormData, "ticketType" | "tickets">
+  ) => void;
+  submitting?: boolean;
+};
+
+export function StepThree({
+  data,
+  setData,
+  onFinish,
+  submitting = false,
+}: StepThreeProps) {
   return (
     <Formik
       initialValues={{
@@ -17,7 +30,7 @@ export function StepThree({ data, setData }: StepProps) {
           type: (t.type ?? data.ticketType) as ITicketType,
           isFree: t.isFree ?? true,
           price: t.price ?? 0,
-          quantity: t.quantity ?? 1, // total available
+          quantity: t.quantity ?? 1,
           maxPerGroup:
             t.maxPerGroup ?? (data.ticketType === "group" ? 1 : undefined),
         })) ?? [
@@ -44,9 +57,21 @@ export function StepThree({ data, setData }: StepProps) {
         setData((prev) => ({ ...prev, ...safeValues }));
       }}
     >
-      {({ errors, touched, isValid, setFieldValue, values }) => (
+      {({ errors, touched, isValid, setFieldValue, values }) => {
+        const finish = (status: "DRAFT" | "PUBLISHED") => {
+          const ticketData = {
+            ticketType: values.ticketType as "single" | "group",
+            tickets: values.tickets.map((t) => ({
+              ...t,
+              type: t.type as "single" | "group",
+            })),
+          };
+          setData((prev) => ({ ...prev, ...ticketData }));
+          onFinish(status, ticketData);
+        };
+
+        return (
         <Form className="space-y-4">
-          {/* Ticket type selection */}
           <div className="flex flex-col gap-2">
             {(["single", "group"] as ITicketType[]).map((type) => (
               <label key={type} className="flex items-center gap-2">
@@ -62,7 +87,6 @@ export function StepThree({ data, setData }: StepProps) {
             ))}
           </div>
 
-          {/* Tickets FieldArray */}
           <FieldArray name="tickets">
             {({ push, remove }) => (
               <div className="space-y-4">
@@ -90,7 +114,6 @@ export function StepThree({ data, setData }: StepProps) {
                       placeholder="Ticket Name"
                     />
 
-                    {/* Free vs Paid */}
                     <div className="flex items-center gap-4">
                       <label className="flex items-center gap-2">
                         <Field
@@ -128,7 +151,6 @@ export function StepThree({ data, setData }: StepProps) {
                       />
                     )}
 
-                    {/* Max per group for group tickets */}
                     {values.ticketType === "group" && (
                       <Field
                         as={Input}
@@ -139,7 +161,6 @@ export function StepThree({ data, setData }: StepProps) {
                       />
                     )}
 
-                    {/* Quantity available */}
                     <Field
                       as={Input}
                       type="number"
@@ -171,22 +192,35 @@ export function StepThree({ data, setData }: StepProps) {
             )}
           </FieldArray>
 
-          {/* Submit */}
-          <div className="flex justify-end pt-4">
+          <div className="flex justify-end gap-3 pt-4">
             <button
-              type="submit"
-              disabled={!isValid}
+              type="button"
+              disabled={!isValid || submitting}
+              onClick={() => finish("DRAFT")}
+              className={`px-6 py-2 rounded-md border transition ${
+                isValid && !submitting
+                  ? "hover:bg-muted"
+                  : "opacity-50 cursor-not-allowed"
+              }`}
+            >
+              {submitting ? "Saving…" : "Save Draft"}
+            </button>
+            <button
+              type="button"
+              disabled={!isValid || submitting}
+              onClick={() => finish("PUBLISHED")}
               className={`px-6 py-2 rounded-md text-white transition ${
-                isValid
+                isValid && !submitting
                   ? "bg-orange-500 hover:bg-orange-600"
                   : "bg-gray-300 cursor-not-allowed"
               }`}
             >
-              Finish
+              {submitting ? "Publishing…" : "Publish Event"}
             </button>
           </div>
         </Form>
-      )}
+        );
+      }}
     </Formik>
   );
 }

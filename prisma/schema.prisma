@@ -5,6 +5,25 @@ generator client {
 
 datasource db {
   provider = "sqlite"
+
+  // PostgreSQL (production):
+  // provider = "postgresql"
+}
+
+enum FestivalStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum BookStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum OrderStatus {
+  PENDING
+  SUCCESS
+  FAILED
 }
 
 // USERS + ROLES
@@ -13,21 +32,25 @@ model User {
   id               String    @id @default(cuid())
   name             String?
   email            String    @unique
-  emailVerified    DateTime? @default(now())
+  emailVerified    DateTime?
   password         String?
   image            String?
   twoFactorEnabled Boolean   @default(false)
 
   roles     UserRole[]
-  festivals Festival[] // festivals created by this user
-  orisas    Orisa[] // orisas created by this user
-  tickets   Ticket[] // tickets created by this user
+  festivals Festival[]
+  orisas    Orisa[]
+  tickets   Ticket[]
+  books     Book[]
+  bookOrders BookOrder[]
 
   accounts Account[]
   sessions Session[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // @@map("app_user")
 
   @@map("user")
 }
@@ -83,6 +106,8 @@ model Festival {
   endDate   DateTime
   endTime   String? // optional, for UI convenience (HH:mm)
 
+  status FestivalStatus @default(DRAFT)
+
   // Step 3: Tickets
   ticketType String // "single" | "group"
   tickets    Ticket[]
@@ -109,6 +134,42 @@ model Ticket {
   quantity    Int // total available tickets
   maxPerGroup Int? // max tickets per person/group
   sold        Int     @default(0) // track how many tickets sold
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// BOOKS SHOP
+
+model Book {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String
+  author      String
+  price       Float      // price in NGN
+  currency    String     @default("NGN")
+  coverImage  String?
+  stock       Int        @default(0)
+  status      BookStatus @default(DRAFT)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  orders BookOrder[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BookOrder {
+  id                Int         @id @default(autoincrement())
+  bookId            Int
+  book              Book        @relation(fields: [bookId], references: [id])
+  userId            String
+  user              User        @relation(fields: [userId], references: [id])
+  amount            Int         // amount in kobo
+  paystackReference String      @unique
+  status            OrderStatus @default(PENDING)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
