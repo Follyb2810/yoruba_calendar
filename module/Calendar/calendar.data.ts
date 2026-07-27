@@ -1,12 +1,14 @@
-import { IFestive } from "./calendar.types";
+import type { IFestive } from "./calendar.types";
 
 export const YORUBA_YEAR_OFFSET = 8042;
+
 export const ORISA_NAMES = [
   "Ọ̀ṣẹ̀ Obatala",
   "Ọ̀ṣẹ̀ Ifá/Orunmila",
   "Ọ̀ṣẹ̀ Ogun",
   "Ọ̀ṣẹ̀ Sango",
 ];
+
 export const ORISA_DAILY: Record<number, string[]> = {
   1: [
     "Ọbàtálá/Òrìṣà Ńlá",
@@ -31,6 +33,7 @@ export const ORISA_DAILY: Record<number, string[]> = {
     "Nàná-Bùkúù",
   ],
 };
+
 export const ORISA_COLORS: Record<string, string> = {
   Obatala: "bg-white text-black",
   Orunmila: "bg-green-200 text-black",

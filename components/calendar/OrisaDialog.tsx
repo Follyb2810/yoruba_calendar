@@ -1,4 +1,5 @@
 "use client";
+
 import { FC } from "react";
 import {
   Dialog,
@@ -38,5 +39,3 @@ export const OrisaDialog: FC<OrisaDialogProps> = ({
     </DialogContent>
   </Dialog>
 );
-
-

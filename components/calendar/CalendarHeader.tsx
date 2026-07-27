@@ -1,28 +1,32 @@
 "use client";
+
 import { FC } from "react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { formatMonthYearLabel, YORUBA_CALENDAR_TZ } from "@/utils/yorubaCalendar";
 
 interface CalendarHeaderProps {
-  cursor: Date;
+  viewYear: number;
+  viewMonth: number;
   showFourDayCycle: boolean;
   setShowFourDayCycle: (v: boolean) => void;
   gotoPrevMonth: () => void;
   gotoNextMonth: () => void;
   gotoToday: () => void;
   setOrisaModalOpen: (v: boolean) => void;
-  getYorubaYear: (date: Date) => number;
+  yorubaYear: number;
 }
 
 const CalendarHeader: FC<CalendarHeaderProps> = ({
-  cursor,
+  viewYear,
+  viewMonth,
   showFourDayCycle,
   setShowFourDayCycle,
   gotoPrevMonth,
   gotoNextMonth,
   gotoToday,
   setOrisaModalOpen,
-  getYorubaYear,
+  yorubaYear,
 }) => {
   return (
     <header className="flex flex-col gap-4 mb-4">
@@ -32,7 +36,7 @@ const CalendarHeader: FC<CalendarHeaderProps> = ({
             Kọ́jọ́dá — Yoruba Calendar
           </h1>
           <p className="text-sm text-muted-foreground truncate">
-            Yoruba year starts June 3 • Toggle Orisa 4-day cycle
+            Yoruba year starts June 3 · Dates follow {YORUBA_CALENDAR_TZ} time
           </p>
         </div>
         <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
@@ -52,15 +56,10 @@ const CalendarHeader: FC<CalendarHeaderProps> = ({
         <div className="flex flex-col sm:flex-row gap-2 text-sm">
           <div>
             Viewing:{" "}
-            <strong>
-              {cursor.toLocaleString(undefined, {
-                month: "long",
-                year: "numeric",
-              })}
-            </strong>
+            <strong>{formatMonthYearLabel(viewYear, viewMonth)}</strong>
           </div>
           <div>
-            Yoruba Year: <strong>{getYorubaYear(cursor)}</strong>
+            Yoruba Year: <strong>{yorubaYear}</strong>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">

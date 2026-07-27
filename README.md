@@ -68,7 +68,9 @@ Open [http://localhost:3000](http://localhost:3000).
 | `EMAIL_FROM` | Sender address for transactional email |
 | `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | Image uploads for books & events |
 | `OWNER_EMAIL` | Your email — auto-grants SUPERADMIN + ADMIN + CREATOR on sign-in |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Dev seed admin account (defaults below) |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Dev seed admin account |
+| `SELLER_EMAIL` / `SELLER_PASSWORD` | Dev seed seller (CREATOR) — owns sample book |
+| `BUYER_EMAIL` / `BUYER_PASSWORD` | Dev seed buyer (USER) — for testing checkout |
 
 ## Roles & access
 
@@ -197,10 +199,15 @@ prisma/         # Schema and migrations
 
 *Draft books only visible to owner/admin.
 
-## Default Admin (after seed)
+## Default dev accounts (after seed)
 
-- Email: value of `OWNER_EMAIL` or `ADMIN_EMAIL` (default `admin@dev.com`)
-- Password: `admin1234` (or `ADMIN_PASSWORD`) — email/password sign-in only
+| Role | Email | Password |
+|------|-------|----------|
+| Admin / owner | `OWNER_EMAIL` or `follyb2810@gmail.com` | `ADMIN_PASSWORD` (default `admin1234`) |
+| Seller | `SELLER_EMAIL` or `follyb2810+seller@gmail.com` | same as admin unless `SELLER_PASSWORD` set |
+| Buyer | `BUYER_EMAIL` or `follyb2810+buyer@gmail.com` | same as admin unless `BUYER_PASSWORD` set |
+
+Gmail plus-addressing (`+seller`, `+buyer`) delivers to the same inbox for local testing.
 
 ## Scripts
 

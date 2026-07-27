@@ -8,6 +8,16 @@ export const YORUBA_WEEK_DAYS = [
   "Àbámẹ́ta (Saturday)",
 ];
 
+export const YORUBA_WEEK_DAYS_SHORT = [
+  "Àìkú",
+  "Ajé",
+  "Ìsẹ́gun",
+  "Ọjọ́rú",
+  "Ọjọ́bọ",
+  "Ẹtì",
+  "Àbámẹ́ta",
+];
+
 export const MONTH_NAMES = [
   "Ṣẹ́rẹ́ (January)",
   "Èrèlè (February)",

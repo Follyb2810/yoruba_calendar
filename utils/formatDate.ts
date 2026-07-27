@@ -1,9 +1,11 @@
 import { MONTH_NAMES, YORUBA_WEEK_DAYS } from "@/constants/mock";
+import { getCalendarDateParts } from "./yorubaCalendar";
 
 export function formatYorubaDate(date: Date): string {
-  const weekDay = YORUBA_WEEK_DAYS[date.getDay()];
-  const monthName = MONTH_NAMES[date.getMonth()];
-  return `${weekDay}, ${date.getDate()} ${monthName} ${date.getFullYear()}`;
+  const parts = getCalendarDateParts(date);
+  const weekDay = YORUBA_WEEK_DAYS[parts.weekday];
+  const monthName = MONTH_NAMES[parts.month - 1];
+  return `${weekDay}, ${parts.day} ${monthName} ${parts.year}`;
 }
 
 export function combineDateAndTime(

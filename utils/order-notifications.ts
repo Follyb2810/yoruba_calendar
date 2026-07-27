@@ -11,6 +11,64 @@ function feedbackUrl(token: string | null): string | null {
   return `${base.replace(/\/$/, "")}/feedback/${token}`;
 }
 
+function paymentUrl(token: string | null): string | null {
+  if (!token) return null;
+  const base =
+    process.env.NEXT_PUBLIC_BASE_URL ??
+    process.env.NEXTAUTH_URL ??
+    "http://localhost:3000";
+  return `${base.replace(/\/$/, "")}/books/orders/pay/${token}`;
+}
+
+export async function notifyBookOrderPlaced(orderId: number): Promise<void> {
+  const order = await prisma.bookOrder.findUnique({
+    where: { id: orderId },
+    include: {
+      book: { include: { user: { select: { email: true, name: true } } } },
+      user: { select: { email: true, name: true } },
+    },
+  });
+
+  if (!order || order.status !== "ORDERED") return;
+
+  const buyerName = order.user.name ?? order.user.email;
+  const fulfillment = fulfillmentLabel(order.fulfillmentMethod);
+
+  await sendEmail({
+    to: order.user.email,
+    subject: `Order placed — ${order.book.title}`,
+    text: `Hi ${buyerName},\n\nYour order for "${order.book.title}" is placed. Pay after you receive the book.\n\n— Kọ́jọ́dá`,
+    html: `<p>Hi ${buyerName},</p><p>Order placed for <strong>${order.book.title}</strong>.</p><p><strong>Pay on receipt</strong> — you'll pay after delivery or pickup.</p>`,
+  });
+
+  await sendEmail({
+    to: order.book.user.email,
+    subject: `New book order — ${order.book.title}`,
+    text: `New order from ${buyerName} (${order.user.email}). ${fulfillment}. Mark ready in Dashboard → Orders.\n\n— Kọ́jọ́dá`,
+    html: `<p>New order for <strong>${order.book.title}</strong> from ${buyerName}.</p><p>Mark ready when sent or available for pickup.</p>`,
+  });
+}
+
+export async function notifyBookOrderReadyForPayment(orderId: number): Promise<void> {
+  const order = await prisma.bookOrder.findUnique({
+    where: { id: orderId },
+    include: { book: true, user: { select: { email: true, name: true } } },
+  });
+
+  if (!order || order.status !== "AWAITING_PAYMENT") return;
+
+  const buyerName = order.user.name ?? order.user.email;
+  const payLink = paymentUrl(order.paymentToken);
+  const amount = formatNairaPlain(order.amount / 100);
+
+  await sendEmail({
+    to: order.user.email,
+    subject: `Your book is ready — confirm & pay`,
+    text: `Hi ${buyerName},\n\n"${order.book.title}" is ready (${amount}). Confirm receipt and pay: ${payLink}\n\n— Kọ́jọ́dá`,
+    html: `<p>Hi ${buyerName},</p><p><strong>${order.book.title}</strong> is ready.</p><p><a href="${payLink}">Confirm I received it & pay ${amount}</a></p>`,
+  });
+}
+
 export async function notifyBookOrderSuccess(orderId: number): Promise<void> {
   const order = await prisma.bookOrder.findUnique({
     where: { id: orderId },
@@ -23,27 +81,21 @@ export async function notifyBookOrderSuccess(orderId: number): Promise<void> {
   if (!order || order.status !== "SUCCESS") return;
 
   const buyerName = order.user.name ?? order.user.email;
-  const sellerEmail = order.book.user.email;
   const amount = formatNairaPlain(order.amount / 100);
-  const fulfillment = fulfillmentLabel(order.fulfillmentMethod);
-
-  const fulfillmentDetails =
-    order.fulfillmentMethod === "DELIVERY"
-      ? `Delivery to: ${order.deliveryAddress}, ${order.deliveryCity}. Phone: ${order.deliveryPhone}`
-      : `Pickup: ${order.pickupLocation ?? "See seller for location"}`;
+  const rateLink = feedbackUrl(order.feedbackToken);
 
   await sendEmail({
     to: order.user.email,
-    subject: `Order confirmed — ${order.book.title}`,
-    text: `Hi ${buyerName},\n\nYour order for "${order.book.title}" is confirmed.\nAmount: ${amount}\n${fulfillment}\n${fulfillmentDetails}\n\nReference: ${order.paystackReference}\n\nThe seller will contact you with next steps.\n\n— Kọ́jọ́dá`,
-    html: `<p>Hi ${buyerName},</p><p>Your order for <strong>${order.book.title}</strong> is confirmed.</p><p><strong>Amount:</strong> ${amount}<br/><strong>${fulfillment}</strong><br/>${fulfillmentDetails}</p><p>Reference: ${order.paystackReference}</p><p>The seller will contact you with next steps.</p><p>— Kọ́jọ́dá</p>`,
+    subject: `Payment confirmed — ${order.book.title}`,
+    text: `Hi ${buyerName},\n\nPayment of ${amount} confirmed.${rateLink ? `\n\nRate your experience: ${rateLink}` : ""}\n\n— Kọ́jọ́dá`,
+    html: `<p>Payment for <strong>${order.book.title}</strong> confirmed.</p>${rateLink ? `<p><a href="${rateLink}">Rate your experience</a></p>` : ""}`,
   });
 
   await sendEmail({
-    to: sellerEmail,
-    subject: `New book order — ${order.book.title}`,
-    text: `New paid order for "${order.book.title}".\n\nBuyer: ${buyerName} (${order.user.email})\nAmount: ${amount}\n${fulfillment}\n${fulfillmentDetails}\n\nReference: ${order.paystackReference}\n\nView orders in your Kọ́jọ́dá dashboard.`,
-    html: `<p>New paid order for <strong>${order.book.title}</strong>.</p><p><strong>Buyer:</strong> ${buyerName} (${order.user.email})<br/><strong>Amount:</strong> ${amount}<br/><strong>${fulfillment}</strong><br/>${fulfillmentDetails}</p><p>Reference: ${order.paystackReference}</p><p>View orders in your Kọ́jọ́dá dashboard.</p>`,
+    to: order.book.user.email,
+    subject: `Buyer paid — ${order.book.title}`,
+    text: `${buyerName} confirmed receipt and paid ${amount} for "${order.book.title}".\n\n— Kọ́jọ́dá`,
+    html: `<p>Buyer paid for <strong>${order.book.title}</strong>. Payout processing.</p>`,
   });
 }
 
@@ -61,47 +113,21 @@ export async function notifyTicketOrderSuccess(orderId: number): Promise<void> {
 
   const buyerName = order.user.name ?? order.user.email;
   const organizerEmail = order.festival.user.email;
-  const amount =
-    order.amount === 0
-      ? "Free"
-      : formatNairaPlain(order.amount / 100);
-  const qtyLabel =
-    order.quantity === 1 ? "1 ticket" : `${order.quantity} tickets`;
+  const amount = order.amount === 0 ? "Free" : formatNairaPlain(order.amount / 100);
+  const qtyLabel = order.quantity === 1 ? "1 ticket" : `${order.quantity} tickets`;
 
   await sendEmail({
     to: order.user.email,
     subject: `Ticket confirmed — ${order.festival.title}`,
-    text: `Hi ${buyerName},\n\nYour ticket for "${order.festival.title}" is confirmed.\nTicket: ${order.ticket.name}\nQuantity: ${qtyLabel}\nAmount: ${amount}\n\nReference: ${order.paystackReference}\n\nSee you at the event!\n\n— Kọ́jọ́dá`,
-    html: `<p>Hi ${buyerName},</p><p>Your ticket for <strong>${order.festival.title}</strong> is confirmed.</p><p><strong>Ticket:</strong> ${order.ticket.name}<br/><strong>Quantity:</strong> ${qtyLabel}<br/><strong>Amount:</strong> ${amount}</p><p>Reference: ${order.paystackReference}</p><p>See you at the event!</p><p>— Kọ́jọ́dá</p>`,
+    text: `Hi ${buyerName},\n\nTicket for "${order.festival.title}" confirmed.\n\n— Kọ́jọ́dá`,
+    html: `<p>Ticket confirmed for <strong>${order.festival.title}</strong>.</p>`,
   });
 
   await sendEmail({
     to: organizerEmail,
-    subject: `New ticket order — ${order.festival.title}`,
-    text: `New ticket order for "${order.festival.title}".\n\nBuyer: ${buyerName} (${order.user.email})\nTicket: ${order.ticket.name}\nQuantity: ${qtyLabel}\nAmount: ${amount}\n\nReference: ${order.paystackReference}\n\nView orders in your Kọ́jọ́dá dashboard.`,
-    html: `<p>New ticket order for <strong>${order.festival.title}</strong>.</p><p><strong>Buyer:</strong> ${buyerName} (${order.user.email})<br/><strong>Ticket:</strong> ${order.ticket.name}<br/><strong>Quantity:</strong> ${qtyLabel}<br/><strong>Amount:</strong> ${amount}</p><p>Reference: ${order.paystackReference}</p><p>View orders in your Kọ́jọ́dá dashboard.</p>`,
-  });
-}
-
-export async function notifyBookOrderFulfilled(orderId: number): Promise<void> {
-  const order = await prisma.bookOrder.findUnique({
-    where: { id: orderId },
-    include: {
-      book: true,
-      user: { select: { email: true, name: true } },
-    },
-  });
-
-  if (!order?.fulfilledAt || order.status !== "SUCCESS") return;
-
-  const buyerName = order.user.name ?? order.user.email;
-  const rateLink = feedbackUrl(order.feedbackToken);
-
-  await sendEmail({
-    to: order.user.email,
-    subject: `Order fulfilled — ${order.book.title}`,
-    text: `Hi ${buyerName},\n\nYour order for "${order.book.title}" has been delivered.\n\n${rateLink ? `Rate your experience: ${rateLink}\n\n` : ""}Reference: ${order.paystackReference}\n\n— Kọ́jọ́dá`,
-    html: `<p>Hi ${buyerName},</p><p>Your order for <strong>${order.book.title}</strong> has been fulfilled.</p>${rateLink ? `<p><a href="${rateLink}">Rate your experience</a> — help us know you're satisfied.</p>` : ""}<p>Reference: ${order.paystackReference}</p><p>— Kọ́jọ́dá</p>`,
+    subject: `New ticket — ${order.festival.title}`,
+    text: `New ticket order: ${buyerName}, ${qtyLabel}, ${amount}.\n\n— Kọ́jọ́dá`,
+    html: `<p>New ticket order for <strong>${order.festival.title}</strong>.</p>`,
   });
 }
 
@@ -122,8 +148,8 @@ export async function notifyTicketOrderFulfilled(orderId: number): Promise<void>
 
   await sendEmail({
     to: order.user.email,
-    subject: `Event complete — ${order.festival.title}`,
-    text: `Hi ${buyerName},\n\nThanks for attending "${order.festival.title}".\n\n${rateLink ? `Rate your experience: ${rateLink}\n\n` : ""}Reference: ${order.paystackReference}\n\n— Kọ́jọ́dá`,
-    html: `<p>Hi ${buyerName},</p><p>Thanks for attending <strong>${order.festival.title}</strong>.</p>${rateLink ? `<p><a href="${rateLink}">Rate your experience</a> — tell us how it went.</p>` : ""}<p>Reference: ${order.paystackReference}</p><p>— Kọ́jọ́dá</p>`,
+    subject: `How was ${order.festival.title}?`,
+    text: `Hi ${buyerName},\n\nConfirm you attended and rate the event: ${rateLink}\n\nOrganizer is paid after your feedback.\n\n— Kọ́jọ́dá`,
+    html: `<p>Thanks for attending <strong>${order.festival.title}</strong>.</p><p><a href="${rateLink}">Confirm attendance & rate</a> — this releases payment to the organizer.</p>`,
   });
 }

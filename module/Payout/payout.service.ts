@@ -68,7 +68,7 @@ export class PayoutService {
       include: { book: { select: { userId: true, title: true } } },
     });
 
-    if (!order || !order.fulfilledAt || order.amount <= 0) return;
+    if (!order || !order.buyerConfirmedAt || order.status !== "SUCCESS" || order.amount <= 0) return;
     if (order.payoutStatus === "COMPLETED" || order.payoutStatus === "PROCESSING") return;
 
     await this.transferToCreator({
@@ -87,7 +87,7 @@ export class PayoutService {
       include: { festival: { select: { userId: true, title: true } } },
     });
 
-    if (!order || !order.fulfilledAt || order.amount <= 0) {
+    if (!order || !order.buyerConfirmedAt || order.status !== "SUCCESS" || order.amount <= 0) {
       if (order && order.amount <= 0) {
         await this.db.ticketOrder.update({
           where: { id: orderId },
@@ -221,7 +221,7 @@ export class PayoutService {
       });
       if (!order || order.book.userId !== userId) throw new Error("Order not found");
       if (order.payoutStatus === "COMPLETED") throw new Error("Already paid out");
-      if (!order.fulfilledAt) throw new Error("Order must be fulfilled first");
+      if (!order.buyerConfirmedAt) throw new Error("Buyer must confirm payment first");
 
       await this.db.bookOrder.update({
         where: { id: orderId },

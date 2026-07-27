@@ -286,10 +286,7 @@ export class TicketOrderService {
     });
 
     if (!order) throw new Error("Order not found");
-    if (order.status !== "SUCCESS") {
-      throw new Error("Only paid orders can be marked fulfilled");
-    }
-    if (order.fulfilledAt) throw new Error("Order is already fulfilled");
+    if (!order.fulfilledAt) throw new Error("Order must be fulfilled first");
 
     const canManage =
       isAdmin(user) || order.festival.userId === user.id;
@@ -306,8 +303,6 @@ export class TicketOrderService {
 
     const { notifyTicketOrderFulfilled } = await import("@/utils/order-notifications");
     notifyTicketOrderFulfilled(orderId).catch(console.error);
-
-    payoutService.payoutTicketOrder(orderId).catch(console.error);
 
     return serializeTicketOrder(updated);
   }

@@ -29,7 +29,7 @@ function payoutLabel(status: string): string {
   }
 }
 
-type StatusFilter = "ALL" | "SUCCESS" | "PENDING" | "FAILED";
+type StatusFilter = "ALL" | "ORDERED" | "AWAITING_PAYMENT" | "SUCCESS" | "PENDING" | "FAILED";
 
 type BookOrderListProps = {
   embedded?: boolean;
@@ -99,11 +99,16 @@ export default function BookOrderList({ embedded }: BookOrderListProps) {
       toast.error(data.error ?? "Could not mark fulfilled");
       return;
     }
-    toast.success("Order marked as fulfilled — buyer notified by email");
+    toast.success("Buyer notified — they can confirm & pay when ready");
     setOrders((prev) =>
       prev.map((o) =>
         o.id === id
-          ? { ...o, isFulfilled: true, fulfilledAt: new Date().toISOString() }
+          ? {
+              ...o,
+              status: "AWAITING_PAYMENT",
+              isFulfilled: true,
+              fulfilledAt: new Date().toISOString(),
+            }
           : o
       )
     );
@@ -147,7 +152,7 @@ export default function BookOrderList({ embedded }: BookOrderListProps) {
               {admin ? "All Book Orders" : "My Book Orders"}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Paid orders with delivery or pickup details for your books
+              Orders for your books — fulfill first, buyer pays on receipt
             </p>
           </div>
           {newCount > 0 && (
@@ -169,7 +174,7 @@ export default function BookOrderList({ embedded }: BookOrderListProps) {
       )}
 
       <div className="flex flex-wrap gap-2">
-        {(["ALL", "SUCCESS", "PENDING", "FAILED"] as StatusFilter[]).map((s) => (
+        {(["ALL", "ORDERED", "AWAITING_PAYMENT", "SUCCESS", "PENDING", "FAILED"] as StatusFilter[]).map((s) => (
           <Button
             key={s}
             variant={filter === s ? "default" : "outline"}
@@ -187,7 +192,7 @@ export default function BookOrderList({ embedded }: BookOrderListProps) {
           <Package className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
           <p className="text-muted-foreground">No orders yet</p>
           <p className="text-xs text-muted-foreground mt-1">
-            New paid orders will appear here with buyer and fulfillment details
+            New orders appear here with buyer and fulfillment details
           </p>
         </div>
       ) : (
@@ -254,16 +259,20 @@ export default function BookOrderList({ embedded }: BookOrderListProps) {
                       )}
                       {order.fulfillmentMethod === "DELIVERY" ? "Delivery" : "Pickup"}
                     </Badge>
-                    {order.status === "SUCCESS" && (
-                      order.isFulfilled ? (
-                        <Badge variant="secondary" className="gap-1">
-                          <CheckCircle2 className="h-3 w-3" /> Fulfilled
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-orange-600 border-orange-300">
-                          Awaiting delivery
-                        </Badge>
-                      )
+                    {order.status === "SUCCESS" && order.buyerConfirmedAt && (
+                      <Badge variant="secondary" className="gap-1">
+                        <CheckCircle2 className="h-3 w-3" /> Buyer paid
+                      </Badge>
+                    )}
+                    {order.status === "AWAITING_PAYMENT" && (
+                      <Badge variant="outline" className="text-orange-600 border-orange-300">
+                        Awaiting buyer payment
+                      </Badge>
+                    )}
+                    {order.status === "ORDERED" && (
+                      <Badge variant="outline" className="text-orange-600 border-orange-300">
+                        Needs fulfillment
+                      </Badge>
                     )}
                   </div>
                 </div>
@@ -312,10 +321,12 @@ export default function BookOrderList({ embedded }: BookOrderListProps) {
                       )}
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Reference: {order.paystackReference}
-                  </p>
-                  {order.isFulfilled && order.creatorPayoutAmount != null && (
+                  {order.paystackReference && (
+                    <p className="text-xs text-muted-foreground">
+                      Reference: {order.paystackReference}
+                    </p>
+                  )}
+                  {order.status === "SUCCESS" && order.creatorPayoutAmount != null && (
                     <p className="text-xs flex items-center gap-1 text-muted-foreground">
                       <Wallet className="h-3 w-3" />
                       Creator payout: ₦{order.creatorPayoutAmount.toLocaleString()} —{" "}
@@ -338,16 +349,16 @@ export default function BookOrderList({ embedded }: BookOrderListProps) {
                         Awaiting buyer feedback
                       </p>
                     )}
-                  {order.status === "SUCCESS" && !order.isFulfilled && (
+                  {order.status === "ORDERED" && (
                     <Button
                       size="sm"
                       className="bg-orange-500 hover:bg-orange-600"
                       onClick={() => fulfillOrder(order.id)}
                     >
-                      Mark as delivered / picked up
+                      Mark ready for buyer
                     </Button>
                   )}
-                  {order.isFulfilled &&
+                  {order.status === "SUCCESS" &&
                     (order.payoutStatus === "FAILED" || order.payoutStatus === "PENDING") &&
                     order.creatorPayoutAmount != null &&
                     order.creatorPayoutAmount > 0 && (

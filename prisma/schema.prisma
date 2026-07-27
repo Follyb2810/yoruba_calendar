@@ -21,8 +21,10 @@ enum BookStatus {
 }
 
 enum OrderStatus {
-  PENDING
-  SUCCESS
+  ORDERED           // book placed — not paid yet
+  AWAITING_PAYMENT  // seller ready — buyer must confirm & pay
+  PENDING           // Paystack in progress
+  SUCCESS           // paid / complete
   FAILED
 }
 
@@ -179,7 +181,9 @@ model TicketOrder {
 
   sellerAcknowledgedAt DateTime?
 
-  fulfilledAt DateTime? // organizer marked complete (buyer attended / ticket honored)
+  fulfilledAt DateTime? // organizer marked event served
+
+  buyerConfirmedAt DateTime? // attendee confirmed they attended
 
   payoutStatus              PayoutStatus @default(PENDING)
   creatorPayoutAmount       Int?         // kobo sent to creator
@@ -230,8 +234,9 @@ model BookOrder {
   userId            String
   user              User        @relation(fields: [userId], references: [id])
   amount            Int         // amount in kobo
-  paystackReference String            @unique
-  status            OrderStatus       @default(PENDING)
+  paystackReference String?           @unique
+  paymentToken      String?           @unique // buyer pay link after seller ships
+  status            OrderStatus       @default(ORDERED)
   fulfillmentMethod FulfillmentMethod @default(PICKUP)
   deliveryAddress   String?
   deliveryCity      String?
@@ -239,7 +244,8 @@ model BookOrder {
   pickupLocation    String?
 
   sellerAcknowledgedAt DateTime? // null = new order notification for seller
-  fulfilledAt          DateTime? // seller marked order complete (book delivered / event served)
+  fulfilledAt          DateTime? // seller marked ready / delivered
+  buyerConfirmedAt     DateTime? // buyer received & paid
 
   payoutStatus              PayoutStatus @default(PENDING)
   creatorPayoutAmount       Int?

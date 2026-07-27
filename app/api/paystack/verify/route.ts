@@ -13,7 +13,7 @@ function bookPayload(order: {
   deliveryPhone: string | null;
   pickupLocation: string | null;
   book: { id: number; title: string };
-  paystackReference: string;
+  paystackReference: string | null;
 }) {
   return {
     orderType: "book" as const,

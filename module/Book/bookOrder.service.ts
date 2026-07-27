@@ -1,12 +1,18 @@
 import { prisma } from "@/utils/prisma-client";
-import { OrderStatus } from "@/generated/prisma";
+import { BookStatus, OrderStatus } from "@/generated/prisma";
 import { isAdmin } from "@/utils/rbac";
 import {
   serializeBookOrder,
   type SerializedBookOrder,
 } from "@/utils/serializeBookOrder";
-import { notifyBookOrderSuccess } from "@/utils/order-notifications";
+import {
+  notifyBookOrderPlaced,
+  notifyBookOrderReadyForPayment,
+  notifyBookOrderSuccess,
+} from "@/utils/order-notifications";
 import { payoutService } from "@/module/Payout/payout.service";
+import { generateReference, generateFeedbackToken, nairaToKobo } from "@/utils/paystack";
+import type { CheckoutBookInput } from "@/helpers/zod/book.schema";
 
 const orderInclude = {
   book: {
@@ -16,6 +22,7 @@ const orderInclude = {
       author: true,
       coverImage: true,
       userId: true,
+      price: true,
     },
   },
   user: {
@@ -55,7 +62,7 @@ export class BookOrderService {
     return this.db.bookOrder.count({
       where: {
         ...this.sellerFilter(user),
-        status: "SUCCESS",
+        status: { in: ["ORDERED", "AWAITING_PAYMENT", "SUCCESS"] },
         sellerAcknowledgedAt: null,
       },
     });
@@ -72,12 +79,8 @@ export class BookOrderService {
 
     if (!order) throw new Error("Order not found");
 
-    const canManage =
-      isAdmin(user) || order.book.userId === user.id;
-
-    if (!canManage) {
-      throw new Error("You are not allowed to manage this order");
-    }
+    const canManage = isAdmin(user) || order.book.userId === user.id;
+    if (!canManage) throw new Error("You are not allowed to manage this order");
 
     const updated = await this.db.bookOrder.update({
       where: { id: orderId },
@@ -92,7 +95,7 @@ export class BookOrderService {
     const { count } = await this.db.bookOrder.updateMany({
       where: {
         ...this.sellerFilter(user),
-        status: "SUCCESS",
+        status: { in: ["ORDERED", "AWAITING_PAYMENT", "SUCCESS"] },
         sellerAcknowledgedAt: null,
       },
       data: { sellerAcknowledgedAt: new Date() },
@@ -101,7 +104,44 @@ export class BookOrderService {
     return count;
   }
 
-  async fulfillOrder(
+  /** Step 1: Buyer places order — no payment yet */
+  async placeOrder(input: CheckoutBookInput, userId: string): Promise<SerializedBookOrder> {
+    const book = await this.db.book.findUnique({ where: { id: input.bookId } });
+
+    if (!book || book.status !== BookStatus.PUBLISHED) {
+      throw new Error("Book not found");
+    }
+    if (book.stock <= 0) throw new Error("This book is out of stock");
+
+    const paymentToken = generateFeedbackToken();
+
+    const order = await this.db.bookOrder.create({
+      data: {
+        bookId: book.id,
+        userId,
+        amount: nairaToKobo(book.price),
+        status: "ORDERED",
+        paymentToken,
+        fulfillmentMethod: input.fulfillmentMethod,
+        deliveryAddress:
+          input.fulfillmentMethod === "DELIVERY" ? input.deliveryAddress!.trim() : null,
+        deliveryCity:
+          input.fulfillmentMethod === "DELIVERY" ? input.deliveryCity!.trim() : null,
+        deliveryPhone:
+          input.fulfillmentMethod === "DELIVERY" ? input.deliveryPhone!.trim() : null,
+        pickupLocation:
+          input.fulfillmentMethod === "PICKUP" ? book.pickupLocation : null,
+      },
+      include: orderInclude,
+    });
+
+    notifyBookOrderPlaced(order.id).catch(console.error);
+
+    return serializeBookOrder(order);
+  }
+
+  /** Step 2: Seller marks book sent / ready for pickup */
+  async markReadyForBuyer(
     orderId: number,
     user: { id: string; roles: string[] }
   ): Promise<SerializedBookOrder> {
@@ -111,32 +151,74 @@ export class BookOrderService {
     });
 
     if (!order) throw new Error("Order not found");
-    if (order.status !== "SUCCESS") {
-      throw new Error("Only paid orders can be marked fulfilled");
-    }
-    if (order.fulfilledAt) throw new Error("Order is already fulfilled");
-
-    const canManage =
-      isAdmin(user) || order.book.userId === user.id;
-
-    if (!canManage) {
-      throw new Error("You are not allowed to manage this order");
+    if (order.status !== "ORDERED") {
+      throw new Error("Only new orders can be marked ready");
     }
 
-    const feedbackToken = payoutService.createFeedbackToken();
+    const canManage = isAdmin(user) || order.book.userId === user.id;
+    if (!canManage) throw new Error("You are not allowed to manage this order");
 
     const updated = await this.db.bookOrder.update({
       where: { id: orderId },
-      data: { fulfilledAt: new Date(), feedbackToken },
+      data: {
+        status: "AWAITING_PAYMENT",
+        fulfilledAt: new Date(),
+        feedbackToken: payoutService.createFeedbackToken(),
+      },
       include: orderInclude,
     });
 
-    const { notifyBookOrderFulfilled } = await import("@/utils/order-notifications");
-    notifyBookOrderFulfilled(orderId).catch(console.error);
-
-    payoutService.payoutBookOrder(orderId).catch(console.error);
+    notifyBookOrderReadyForPayment(orderId).catch(console.error);
 
     return serializeBookOrder(updated);
+  }
+
+  /** Step 3: Buyer starts Paystack after receiving the book */
+  async initializeBuyerPayment(paymentToken: string, userId: string) {
+    const order = await this.db.bookOrder.findUnique({
+      where: { paymentToken },
+      include: { book: true, user: true },
+    });
+
+    if (!order) throw new Error("Order not found");
+    if (order.userId !== userId) throw new Error("This order is not yours");
+    if (order.status !== "AWAITING_PAYMENT") {
+      throw new Error("This order is not ready for payment");
+    }
+
+    const book = await this.db.book.findUnique({ where: { id: order.bookId } });
+    if (!book || book.stock <= 0) throw new Error("This book is out of stock");
+
+    const reference = generateReference("BOOK");
+
+    await this.db.bookOrder.update({
+      where: { id: order.id },
+      data: { paystackReference: reference, status: "PENDING" },
+    });
+
+    return {
+      reference,
+      amountKobo: order.amount,
+      email: order.user.email,
+      bookTitle: order.book.title,
+    };
+  }
+
+  async getOrderByPaymentToken(token: string, userId: string) {
+    const order = await this.db.bookOrder.findUnique({
+      where: { paymentToken: token },
+      include: { book: { select: { title: true, price: true, coverImage: true } } },
+    });
+    if (!order) return null;
+    if (order.userId !== userId) throw new Error("This order is not yours");
+    return {
+      id: order.id,
+      status: order.status,
+      bookTitle: order.book.title,
+      coverImage: order.book.coverImage,
+      price: order.book.price,
+      fulfillmentMethod: order.fulfillmentMethod,
+    };
   }
 
   async completePaidOrder(reference: string): Promise<SerializedBookOrder | null> {
@@ -151,10 +233,18 @@ export class BookOrderService {
       return serializeBookOrder(order);
     }
 
+    const book = await this.db.book.findUnique({ where: { id: order.bookId } });
+    if (!book || book.stock <= 0) {
+      throw new Error("Book is out of stock");
+    }
+
     await this.db.$transaction([
       this.db.bookOrder.update({
         where: { id: order.id },
-        data: { status: "SUCCESS" },
+        data: {
+          status: "SUCCESS",
+          buyerConfirmedAt: new Date(),
+        },
       }),
       this.db.book.update({
         where: { id: order.bookId },
@@ -163,6 +253,7 @@ export class BookOrderService {
     ]);
 
     notifyBookOrderSuccess(order.id).catch(console.error);
+    payoutService.payoutBookOrder(order.id).catch(console.error);
 
     const updated = await this.db.bookOrder.findUniqueOrThrow({
       where: { id: order.id },
@@ -173,10 +264,23 @@ export class BookOrderService {
   }
 
   async failOrder(reference: string): Promise<void> {
-    await this.db.bookOrder.updateMany({
+    const order = await this.db.bookOrder.findFirst({
       where: { paystackReference: reference, status: "PENDING" },
-      data: { status: "FAILED" },
     });
+    if (!order) return;
+
+    await this.db.bookOrder.update({
+      where: { id: order.id },
+      data: { status: "AWAITING_PAYMENT", paystackReference: null },
+    });
+  }
+
+  /** @deprecated use markReadyForBuyer */
+  async fulfillOrder(
+    orderId: number,
+    user: { id: string; roles: string[] }
+  ): Promise<SerializedBookOrder> {
+    return this.markReadyForBuyer(orderId, user);
   }
 }
 

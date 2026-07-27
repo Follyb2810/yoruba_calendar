@@ -1,72 +1,81 @@
 import {
   YORUBA_YEAR_OFFSET,
   ORISA_NAMES,
-} from "@/app/(public)/calendar/_component/mocks";
-import { toKeyDate } from "./getOrisaNameForDate";
+} from "@/module/Calendar/calendar.data";
+import {
+  type CalendarDateParts,
+  civilDateParts,
+  daysBetweenCivilDates,
+  daysInCivilMonth,
+  getCalendarDateParts,
+} from "./yorubaCalendar";
 
-export function getYorubaYear(date: Date) {
-  const newyear = date.getFullYear();
-  const newYearThisGreg = toKeyDate(newyear, 6, 3);
-  let yorubaYear = newyear + YORUBA_YEAR_OFFSET;
-  if (date.getTime() < newYearThisGreg.getTime())
-    yorubaYear = newyear - 1 + YORUBA_YEAR_OFFSET;
-  return yorubaYear;
+const ORISA_ANCHOR = { year: 1958, month: 6, day: 3 };
+const ORISA_ANCHOR_INDEX = 0;
+
+function resolveParts(
+  date: Date | Pick<CalendarDateParts, "year" | "month" | "day">
+): CalendarDateParts {
+  if (date instanceof Date) {
+    return getCalendarDateParts(date);
+  }
+  return civilDateParts(date.year, date.month, date.day);
 }
-export function toLocalMidnight(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+export function getYorubaYear(
+  date: Date | Pick<CalendarDateParts, "year" | "month" | "day">
+): number {
+  const { year, month, day } = resolveParts(date);
+  if (month < 6 || (month === 6 && day < 3)) {
+    return year - 1 + YORUBA_YEAR_OFFSET;
+  }
+  return year + YORUBA_YEAR_OFFSET;
 }
 
-// Historical anchor:
-// June 3, 1958 = Ọ̀ṣẹ̀ Ọbàtálá (Day 1)
-// Anchor for Yoruba calendar
-const ANCHOR_YEAR = 1958;
-const ANCHOR_MONTH = 5; // June (0-based)
-const ANCHOR_DAY = 3;
+/** Yoruba year label for a month view (avoids using day 1 in June). */
+export function getYorubaYearForMonthView(
+  viewYear: number,
+  viewMonth: number,
+  today: Pick<CalendarDateParts, "year" | "month" | "day">
+): number {
+  if (viewYear === today.year && viewMonth === today.month) {
+    return getYorubaYear(today);
+  }
 
-// Yoruba cycle is midnight-to-midnight, and the anchor is June 3, 1958.
-// Historical anchor: June 3, 1958 = Ọ̀ṣẹ̀ Ọbàtálá (Day 1)
-export const ORISA_ANCHOR_DATE = toLocalMidnight(
-  new Date(ANCHOR_YEAR, ANCHOR_MONTH, ANCHOR_DAY)
-);
+  if (viewMonth === 6) {
+    return getYorubaYear({ year: viewYear, month: 6, day: 3 });
+  }
 
-// const ORISA_ANCHOR_DATE = toLocalMidnight(new Date(1958, 5, 3));
-const ORISA_ANCHOR_INDEX = 0; // Obatala
+  const dim = daysInCivilMonth(viewYear, viewMonth);
+  return getYorubaYear({ year: viewYear, month: viewMonth, day: Math.min(15, dim) });
+}
 
-export function getOrisaDayIndex(date: Date): number {
-  const ONE_DAY = 24 * 60 * 60 * 1000;
-  const target = toLocalMidnight(date);
-  const diffTime = target.getTime() - ORISA_ANCHOR_DATE.getTime();
-  console.log({ diffTime });
-  const daysSince = Math.floor(diffTime / ONE_DAY);
+export function getOrisaDayIndex(
+  date: Date | Pick<CalendarDateParts, "year" | "month" | "day">
+): number {
+  const target = resolveParts(date);
+  const daysSince = daysBetweenCivilDates(ORISA_ANCHOR, target);
 
   /*
-    The Yoruba 4-day Orisa cycle:
-      Day 1: Obatala
-      Day 2: Ifá/Orunmila
-      Day 3: Ogun
-      Day 4: Sango
-
-    ORISA_ANCHOR_INDEX = 0 corresponds to Obatala.
-
-    Why we add +1:
-    ----------------
-    - Our anchor is in 1958, but we want the cycle to align with **modern Yoruba years**.
-    - Without +1, the calculated cycle ends up **one day behind** for current dates.
-    - Adding +1 shifts the cycle forward so June 3 of any Yoruba year correctly starts on Obatala.
-    - This is essentially a **calendar alignment adjustment**.
+    June 3, 1958 = Ọ̀ṣẹ̀ Ọbàtálá (Day 1). +1 aligns modern Yoruba years
+    so each June 3 opens on Obatala.
   */
-  const index = (((ORISA_ANCHOR_INDEX + daysSince + 1) % 4) + 4) % 4;
-  return index + 1; // Return 1–4 (1 = Obatala, 2 = Ifá, 3 = Ogun, 4 = Sango)
+  const index =
+    (((ORISA_ANCHOR_INDEX + daysSince + 1) % 4) + 4) % 4;
+  return index + 1;
 }
 
-export function getOrisaNameForDate(date: Date) {
+export function getOrisaNameForDate(
+  date: Date | Pick<CalendarDateParts, "year" | "month" | "day">
+): string {
   const idx = getOrisaDayIndex(date) - 1;
   return ORISA_NAMES[idx];
 }
 
-export function startOfMonth(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
+export function startOfMonth(year: number, month: number) {
+  return civilDateParts(year, month, 1);
 }
-export function daysInMonth(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+
+export function daysInMonth(year: number, month: number) {
+  return daysInCivilMonth(year, month);
 }

@@ -1,5 +1,6 @@
 import { prisma } from "@/utils/prisma-client";
 import type { FeedbackInput } from "@/helpers/zod/payout.schema";
+import { payoutService } from "@/module/Payout/payout.service";
 
 export type FeedbackOrderPreview = {
   orderType: "book" | "ticket";
@@ -52,7 +53,7 @@ export class FeedbackService {
     });
 
     if (book) {
-      if (!book.fulfilledAt) throw new Error("Order is not fulfilled yet");
+      if (book.status !== "SUCCESS") throw new Error("Complete payment first");
       if (book.buyerFeedbackAt) throw new Error("Feedback already submitted");
 
       await this.db.bookOrder.update({
@@ -71,7 +72,7 @@ export class FeedbackService {
     });
 
     if (ticket) {
-      if (!ticket.fulfilledAt) throw new Error("Order is not fulfilled yet");
+      if (!ticket.fulfilledAt) throw new Error("Event not marked complete yet");
       if (ticket.buyerFeedbackAt) throw new Error("Feedback already submitted");
 
       await this.db.ticketOrder.update({
@@ -80,8 +81,11 @@ export class FeedbackService {
           buyerRating: input.rating,
           buyerComment: input.comment?.trim() || null,
           buyerFeedbackAt: new Date(),
+          buyerConfirmedAt: new Date(),
         },
       });
+
+      payoutService.payoutTicketOrder(ticket.id).catch(console.error);
       return;
     }
 

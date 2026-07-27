@@ -73,31 +73,16 @@ export async function runSeedIfEmpty() {
     });
   }
 
-  // Create admin user (dev seed account)
-  const adminEmail = (process.env.OWNER_EMAIL ?? process.env.ADMIN_EMAIL ?? "admin@dev.com")
-    .split(",")[0]
-    .trim()
-    .toLowerCase();
-  const adminPassword = process.env.ADMIN_PASSWORD ?? "admin1234";
-  const hashed = await bcrypt.hash(adminPassword, 10);
-
-  let admin = await prisma.user.findUnique({ where: { email: adminEmail } });
-
-  if (!admin) {
-    admin = await prisma.user.create({
-      data: {
-        email: adminEmail,
-        name: "Administrator",
-        password: hashed,
-        emailVerified: new Date(),
-        roles: {
-          create: ALL_ROLES.map((role) => ({
-            role: { connect: { name: role } },
-          })),
-        },
-      },
-    });
-  }
+  const devPassword = process.env.ADMIN_PASSWORD ?? process.env.DEV_PASSWORD ?? "admin1234";
+  const admin = await ensureDevUser({
+    email:
+      process.env.OWNER_EMAIL ??
+      process.env.ADMIN_EMAIL ??
+      "follyb2810@gmail.com",
+    name: "Administrator",
+    password: devPassword,
+    roles: ALL_ROLES,
+  });
 
   // Upsert Orisas
   const orisaMap: Record<string, number> = {};
@@ -143,6 +128,97 @@ export async function runSeedIfEmpty() {
   console.log("Seeding completed!");
 }
 
+function normalizeEmail(raw: string): string {
+  return raw.split(",")[0].trim().toLowerCase();
+}
+
+async function ensureDevUser(params: {
+  email: string;
+  name: string;
+  password: string;
+  roles: string[];
+}) {
+  const email = normalizeEmail(params.email);
+  const hashed = await bcrypt.hash(params.password, 10);
+
+  let user = await prisma.user.findUnique({ where: { email } });
+
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        email,
+        name: params.name,
+        password: hashed,
+        emailVerified: new Date(),
+        roles: {
+          create: params.roles.map((role) => ({
+            role: { connect: { name: role } },
+          })),
+        },
+      },
+    });
+    return user;
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { password: hashed, name: params.name },
+  });
+
+  for (const roleName of params.roles) {
+    const role = await prisma.role.findUnique({ where: { name: roleName } });
+    if (!role) continue;
+
+    const existing = await prisma.userRole.findFirst({
+      where: { userId: user.id, roleId: role.id },
+    });
+
+    if (!existing) {
+      await prisma.userRole.create({
+        data: { userId: user.id, roleId: role.id },
+      });
+    }
+  }
+
+  return user;
+}
+
+/** Always upsert dev admin, seller, and buyer accounts. */
+async function seedDevUsers() {
+  const devPassword = process.env.ADMIN_PASSWORD ?? process.env.DEV_PASSWORD ?? "admin1234";
+
+  const adminEmail =
+    process.env.OWNER_EMAIL ?? process.env.ADMIN_EMAIL ?? "follyb2810@gmail.com";
+  const sellerEmail = process.env.SELLER_EMAIL ?? "follyb2810+seller@gmail.com";
+  const buyerEmail = process.env.BUYER_EMAIL ?? "follyb2810+buyer@gmail.com";
+
+  await ensureDevUser({
+    email: adminEmail,
+    name: "Administrator",
+    password: devPassword,
+    roles: ["USER", "CREATOR", "MODERATOR", "ADMIN", "SUPERADMIN"],
+  });
+
+  await ensureDevUser({
+    email: sellerEmail,
+    name: "Book Seller",
+    password: process.env.SELLER_PASSWORD ?? devPassword,
+    roles: ["USER", "CREATOR"],
+  });
+
+  await ensureDevUser({
+    email: buyerEmail,
+    name: "Book Buyer",
+    password: process.env.BUYER_PASSWORD ?? devPassword,
+    roles: ["USER"],
+  });
+
+  console.log("Dev users ready:");
+  console.log(`  Admin:  ${normalizeEmail(adminEmail)}`);
+  console.log(`  Seller: ${normalizeEmail(sellerEmail)}`);
+  console.log(`  Buyer:  ${normalizeEmail(buyerEmail)}`);
+}
+
 async function publishSampleFestivals() {
   const sampleTitles = [
     "Olokun Festival",
@@ -162,10 +238,11 @@ async function seedSampleBook() {
   const title = "Ọ̀rìṣà: A Beginner's Guide to Yoruba Spirituality";
   const existing = await prisma.book.findFirst({ where: { title } });
 
-  const admin = await prisma.user.findFirst({
-    where: { roles: { some: { role: { name: "ADMIN" } } } },
+  const sellerEmail = process.env.SELLER_EMAIL ?? "follyb2810+seller@gmail.com";
+  const seller = await prisma.user.findUnique({
+    where: { email: normalizeEmail(sellerEmail) },
   });
-  if (!admin) return;
+  if (!seller) return;
 
   const bookData = {
     title,
@@ -183,13 +260,14 @@ async function seedSampleBook() {
       "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop",
     backImage:
       "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&h=600&fit=crop",
-    userId: admin.id,
+    userId: seller.id,
   };
 
   if (existing) {
     await prisma.book.update({
       where: { id: existing.id },
       data: {
+        userId: seller.id,
         allowsDelivery: bookData.allowsDelivery,
         allowsPickup: bookData.allowsPickup,
         pickupLocation: bookData.pickupLocation,
@@ -243,6 +321,7 @@ async function seedSampleTickets() {
 }
 
 runSeedIfEmpty()
+  .then(() => seedDevUsers())
   .then(() => publishSampleFestivals())
   .then(() => seedSampleBook())
   .then(() => seedSampleTickets())

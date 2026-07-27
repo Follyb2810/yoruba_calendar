@@ -6,7 +6,7 @@ export type SerializedBookOrder = {
   status: OrderStatus;
   amount: number;
   amountNaira: number;
-  paystackReference: string;
+  paystackReference: string | null;
   fulfillmentMethod: FulfillmentMethod;
   fulfillmentLabel: string;
   deliveryAddress: string | null;
@@ -16,6 +16,8 @@ export type SerializedBookOrder = {
   isNew: boolean;
   isFulfilled: boolean;
   fulfilledAt: string | null;
+  buyerConfirmedAt: string | null;
+  paymentToken: string | null;
   payoutStatus: string;
   creatorPayoutAmount: number | null;
   buyerRating: number | null;
@@ -52,9 +54,13 @@ export function serializeBookOrder(order: OrderWithRelations): SerializedBookOrd
     deliveryCity: order.deliveryCity,
     deliveryPhone: order.deliveryPhone,
     pickupLocation: order.pickupLocation,
-    isNew: order.status === "SUCCESS" && !order.sellerAcknowledgedAt,
+    isNew: order.status === "ORDERED" || order.status === "AWAITING_PAYMENT"
+      ? !order.sellerAcknowledgedAt
+      : order.status === "SUCCESS" && !order.sellerAcknowledgedAt,
     isFulfilled: !!order.fulfilledAt,
     fulfilledAt: order.fulfilledAt?.toISOString() ?? null,
+    buyerConfirmedAt: order.buyerConfirmedAt?.toISOString() ?? null,
+    paymentToken: order.paymentToken,
     payoutStatus: order.payoutStatus,
     creatorPayoutAmount:
       order.creatorPayoutAmount != null ? order.creatorPayoutAmount / 100 : null,
@@ -77,10 +83,14 @@ export function serializeBookOrder(order: OrderWithRelations): SerializedBookOrd
 
 export function formatOrderStatus(status: OrderStatus): string {
   switch (status) {
+    case "ORDERED":
+      return "Order placed";
+    case "AWAITING_PAYMENT":
+      return "Ready — awaiting payment";
     case "SUCCESS":
       return "Paid";
     case "PENDING":
-      return "Pending";
+      return "Payment processing";
     case "FAILED":
       return "Failed";
     default:

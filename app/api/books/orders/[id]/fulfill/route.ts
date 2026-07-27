@@ -19,7 +19,7 @@ export async function POST(_req: Request, context: RouteContext) {
 
   try {
     const order = await bookOrderService.fulfillOrder(orderId, session!.user);
-    return NextResponse.json({ order, message: "Order marked as fulfilled" });
+    return NextResponse.json({ order, message: "Order marked ready — buyer notified to pay" });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to fulfill order";
     return jsonError(message, 400);

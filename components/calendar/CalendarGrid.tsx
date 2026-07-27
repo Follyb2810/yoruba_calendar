@@ -1,19 +1,19 @@
 "use client";
+
 import { getBusinessWeekDayName } from "@/utils/getBusinessWeekDayName";
 import { getOrisaColor } from "@/utils/getOrisaColor";
 import { getOrisaNameForDate } from "@/utils/getYorubaYear";
+import {
+  type CalendarDateParts,
+  isSameCivilDate,
+} from "@/utils/yorubaCalendar";
 import { FC } from "react";
 
-interface GridCell {
-  date: Date;
-  // festivals: any[];
-}
-
 interface CalendarGridProps {
-  grid: (GridCell | null)[];
+  grid: (CalendarDateParts | null)[];
   showFourDayCycle: boolean;
-  today: Date;
-  openDayModal: (day: number) => void;
+  today: Pick<CalendarDateParts, "year" | "month" | "day">;
+  openDayModal: (cell: CalendarDateParts) => void;
 }
 
 const CalendarGrid: FC<CalendarGridProps> = ({
@@ -38,22 +38,23 @@ const CalendarGrid: FC<CalendarGridProps> = ({
             return (
               <div key={i} className="p-2 border min-h-[90px] bg-muted/40" />
             );
-          const { date } = cell;
-          const isToday = date.toDateString() === today.toDateString();
-          const orisaName = showFourDayCycle ? getOrisaNameForDate(date) : "";
+
+          const isToday = isSameCivilDate(cell, today);
+          const orisaName = showFourDayCycle ? getOrisaNameForDate(cell) : "";
           const orisaColor = showFourDayCycle ? getOrisaColor(orisaName) : "";
           const [bgClass, textClass] = orisaColor.split(" ");
-          const businessName = getBusinessWeekDayName(date);
+          const businessName = getBusinessWeekDayName(cell);
+
           return (
             <div
               key={i}
               className={`p-1 sm:p-2 border min-h-[70px] sm:min-h-[90px] ${bgClass} ${textClass} ${
                 isToday ? "today-dotted" : ""
               }`}
-              onClick={() => openDayModal(date.getDate())}
+              onClick={() => openDayModal(cell)}
             >
               <div className="flex justify-between items-start">
-                <div className="text-sm font-medium">{date.getDate()}</div>
+                <div className="text-sm font-medium">{cell.day}</div>
                 <div className="text-xs">{businessName}</div>
               </div>
               {showFourDayCycle && (

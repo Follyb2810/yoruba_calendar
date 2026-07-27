@@ -55,10 +55,10 @@ function PaymentVerifyInner() {
     return (
       <div className="text-center py-20 space-y-4 max-w-md mx-auto px-4">
         <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
-        <h1 className="text-2xl font-bold">Order confirmed!</h1>
+        <h1 className="text-2xl font-bold">Payment confirmed!</h1>
         {bookTitle && (
           <p className="text-muted-foreground">
-            Your physical copy of <strong>{bookTitle}</strong> is on the way.
+            Thank you for confirming receipt of <strong>{bookTitle}</strong>.
           </p>
         )}
         {fulfillment && (
@@ -84,7 +84,7 @@ function PaymentVerifyInner() {
           </div>
         )}
         <p className="text-xs text-muted-foreground">
-          A confirmation email has been sent. The seller will contact you about delivery or pickup.
+          Payment confirmed. The seller has been notified and will receive their payout shortly.
         </p>
         <Button asChild className="bg-orange-500 hover:bg-orange-600">
           <Link href="/books">Continue Shopping</Link>

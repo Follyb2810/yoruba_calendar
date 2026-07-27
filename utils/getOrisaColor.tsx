@@ -1,4 +1,4 @@
-import { ORISA_COLORS } from "@/app/(public)/calendar/_component/mocks";
+import { ORISA_COLORS } from "@/module/Calendar/calendar.data";
 
 export function getOrisaColor(orisaName: string) {
   const key = Object.keys(ORISA_COLORS).find((k) => orisaName.includes(k));

@@ -61,7 +61,7 @@ export default function BookPurchasePanel({ book }: BookPurchasePanelProps) {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/paystack/initialize", {
+      const res = await fetch("/api/books/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -74,11 +74,12 @@ export default function BookPurchasePanel({ book }: BookPurchasePanelProps) {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Could not start payment");
+      if (!res.ok) throw new Error(data.error ?? "Could not place order");
 
-      window.location.href = data.authorization_url;
+      toast.success("Order placed! You'll pay after you receive the book.");
+      router.push("/books");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Payment failed");
+      toast.error(err instanceof Error ? err.message : "Order failed");
     } finally {
       setLoading(false);
     }
@@ -174,15 +175,15 @@ export default function BookPurchasePanel({ book }: BookPurchasePanelProps) {
         className="bg-orange-500 hover:bg-orange-600 w-full"
       >
         {loading
-          ? "Redirecting to Paystack…"
+          ? "Placing order…"
           : !session
             ? "Sign in to order"
-            : "Pay & Order"}
+            : "Place order"}
       </Button>
       <p className="text-xs text-muted-foreground text-center">
         {!session
-          ? "Browse freely — sign in only when you're ready to pay"
-          : "Secure payment via Paystack · physical book only"}
+          ? "Browse freely — sign in only when you're ready to order"
+          : "Pay on receipt — no charge until you confirm you received the book"}
       </p>
     </div>
   );
